@@ -7,7 +7,7 @@ import {
   renameSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   registerAppResource,
@@ -18,7 +18,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
-const appHtml = readFileSync("public/app-web.html", "utf8");
+const PUBLIC_DIR = "public";
+const appHtml = readFileSync(join(PUBLIC_DIR, "app-web.html"), "utf8");
 const APP_URI = "ui://widget/eris-focus.html";
 const ERIS_PATCH_VERSION = "1.0001";
 
@@ -1604,6 +1605,65 @@ function applyCorsHeaders(req, res) {
   return true;
 }
 
+
+const STATIC_MIME_TYPES = {
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+};
+
+function getStaticMimeType(filePath) {
+  return STATIC_MIME_TYPES[extname(filePath).toLowerCase()] ?? "application/octet-stream";
+}
+
+function servePublicFile(pathname, res) {
+  const isKnownPublicFile = pathname === "/styles.css" || pathname === "/app.js";
+  const isAssetFile = pathname.startsWith("/assets/");
+
+  if (!isKnownPublicFile && !isAssetFile) {
+    return false;
+  }
+
+  let safeRelativePath;
+
+  try {
+    safeRelativePath = decodeURIComponent(pathname).replace(/^\/+/, "");
+  } catch {
+    res.writeHead(400).end("Bad request");
+    return true;
+  }
+
+  if (
+    !safeRelativePath ||
+    safeRelativePath.includes("..") ||
+    safeRelativePath.includes("\\")
+  ) {
+    res.writeHead(400).end("Bad request");
+    return true;
+  }
+
+  const filePath = join(PUBLIC_DIR, safeRelativePath);
+
+  if (!existsSync(filePath)) {
+    res.writeHead(404).end("Not Found");
+    return true;
+  }
+
+  res.writeHead(200, {
+    "content-type": getStaticMimeType(filePath),
+    "cache-control": "no-cache",
+  });
+  res.end(readFileSync(filePath));
+  return true;
+}
+
 function createHttpServer() {
   return createServer(async (req, res) => {
   if (!req.url) {
@@ -1612,6 +1672,10 @@ function createHttpServer() {
   }
 
   const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
+
+  if (req.method === "GET" && servePublicFile(url.pathname, res)) {
+    return;
+  }
 
   if (req.method === "OPTIONS" && url.pathname === MCP_PATH) {
     if (!applyCorsHeaders(req, res)) {
