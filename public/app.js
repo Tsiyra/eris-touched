@@ -76,6 +76,7 @@ const ERIS_PATCH_VERSION = "1.0005";
 
       const pinnedRequestList = document.querySelector("#pinned-request-list");
       const pinnedRequestCount = document.querySelector("#pinned-request-count");
+      const questboardActiveCard = document.querySelector(".questboard-active-card");
       const activeQuestEmpty = document.querySelector("#active-quest-empty");
       const activeQuestDetails = document.querySelector("#active-quest-details");
       const activeQuestTitle = document.querySelector("#active-quest-title");
@@ -113,6 +114,9 @@ const ERIS_PATCH_VERSION = "1.0005";
 
       navButtons.forEach((button) => {
         button.addEventListener("click", () => {
+          if (currentQuest?.status === "active" && button.dataset.screen !== "questboard") {
+            return;
+          }
           showScreen(button.dataset.screen);
         });
       });
@@ -272,6 +276,26 @@ const ERIS_PATCH_VERSION = "1.0005";
         }
       }
 
+      function setFocusSessionActive(isActive) {
+        document.body.classList.toggle("focus-session-active", isActive);
+
+        if (questboardActiveCard) {
+          questboardActiveCard.classList.toggle("focus-session-active", isActive);
+        }
+
+        navButtons.forEach((button) => {
+          button.disabled = isActive;
+        });
+
+        if (settingsGearButton) {
+          settingsGearButton.disabled = isActive;
+        }
+
+        if (openRequestModalButton) {
+          openRequestModalButton.disabled = isActive;
+        }
+      }
+
       function startLocalTimer(quest = null) {
         questStarted = true;
         timerRunning = true;
@@ -353,6 +377,7 @@ const ERIS_PATCH_VERSION = "1.0005";
         pauseButton.disabled = true;
         resumeButton.disabled = true;
         completeButton.disabled = true;
+        setFocusSessionActive(false);
       }
 
       function readFileAsDataUrl(file) {
@@ -859,6 +884,12 @@ const ERIS_PATCH_VERSION = "1.0005";
 
       function renderActiveQuest() {
         const isActive = currentQuest?.status === "active";
+
+        setFocusSessionActive(isActive);
+
+        if (isActive) {
+          showScreen("questboard");
+        }
 
         if (completeButton) {
           completeButton.disabled = !isActive;
