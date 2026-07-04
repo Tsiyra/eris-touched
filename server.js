@@ -1693,19 +1693,8 @@ function isAllowedOrigin(origin) {
   }
 
   try {
-    const url = new URL(origin);
-    const isLocalhost =
-      ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
-    const isOpenAiEmbedOrigin =
-      url.hostname === "chatgpt.com" ||
-      url.hostname.endsWith(".chatgpt.com") ||
-      url.hostname === "openai.com" ||
-      url.hostname.endsWith(".openai.com");
-
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      (isLocalhost || isOpenAiEmbedOrigin)
-    );
+    new URL(origin);
+    return true;
   } catch {
     return false;
   }
