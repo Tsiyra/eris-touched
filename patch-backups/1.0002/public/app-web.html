@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Eris-Touched Guild Questboard</title>
-    <meta name="eris-app-version" content="1.0002" />
+    <meta name="eris-app-version" content="1.0001" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
 
@@ -208,15 +208,15 @@
             </div>
 
             <div class="prompt-box">
-              <strong>Manual image prompt</strong>
+              <strong>Portrait prompt saved</strong>
               <div id="portrait-prompt-status">
-                Save character choices, copy the prompt, generate the image manually, then upload the portrait here.
+                Built from the current character choices.
               </div>
               <div id="portrait-prompt" hidden>
                 A fantasy portrait of an Eris-Touched hero.
               </div>
               <button class="secondary" id="generate-prompt-button">
-                Refresh Saved Prompt
+                Generate Saved Prompt
               </button>
               <button class="secondary" id="copy-portrait-prompt-button">
                 Copy Saved Prompt
@@ -264,7 +264,7 @@
               <div class="portrait-modal-outfit-pill">COMMON · <span id="portrait-modal-outfit">Hero Starter Outfit</span></div>
               <div class="portrait-modal-actions">
                 <button id="save-image-button" class="secondary">Save Image</button>
-                <button id="generate-image-button" class="primary loading-button">Copy Image Prompt</button>
+                <button id="generate-image-button" class="primary loading-button">Generate New Image</button>
               </div>
               <div id="portrait-generation-status" class="portrait-modal-subtext" aria-live="polite"></div>
             </div>

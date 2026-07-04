@@ -21,7 +21,7 @@ import { z } from "zod";
 const PUBLIC_DIR = "public";
 const appHtml = readFileSync(join(PUBLIC_DIR, "app-web.html"), "utf8");
 const APP_URI = "ui://widget/eris-focus.html";
-const ERIS_PATCH_VERSION = "1.0002";
+const ERIS_PATCH_VERSION = "1.0001";
 
 const DATA_DIR = process.env.ERIS_DATA_DIR ?? "data";
 const SAVE_FILE = join(DATA_DIR, "save.json");
@@ -37,9 +37,9 @@ const CONFIGURED_ALLOWED_ORIGINS = new Set(
 );
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-2";
 const OPENAI_IMAGE_SIZE = process.env.OPENAI_IMAGE_SIZE ?? "1024x1024";
-const IMAGE_GENERATION_SERVICE = process.env.IMAGE_GENERATION_SERVICE ?? "manual";
+const IMAGE_GENERATION_SERVICE = process.env.IMAGE_GENERATION_SERVICE ?? "openai";
 const STABLE_DIFFUSION_URL = process.env.STABLE_DIFFUSION_URL ?? "http://127.0.0.1:7860";
-const STORY_GENERATION_SERVICE = process.env.STORY_GENERATION_SERVICE ?? "ollama";
+const STORY_GENERATION_SERVICE = process.env.STORY_GENERATION_SERVICE ?? "template";
 const OLLAMA_URL = process.env.OLLAMA_URL ?? "http://127.0.0.1:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "llama3";
 const DEFAULT_CHARACTER_RACE = "Human";
@@ -837,41 +837,17 @@ function createPortraitPrompt(
 async function generatePortraitImage(prompt) {
   const service = IMAGE_GENERATION_SERVICE.toLowerCase();
 
-  if (service === "manual") {
-    return {
-      ok: true,
-      mode: "manual",
-      prompt,
-      message:
-        "Manual image mode: the portrait prompt is ready to copy. Generate the image manually, then upload it in the app.",
-    };
+  if (service === "stable-diffusion") {
+    return await generatePortraitWithStableDiffusion(prompt);
   }
 
-  if (service === "gemini") {
-    return await generatePortraitWithGeminiAiStudio(prompt);
-  }
-
-  if (service === "openai" || service === "stable-diffusion") {
-    return {
-      ok: false,
-      message:
-        "OpenAI and Stable Diffusion image generation are disabled in patch 1.0002. Use manual image prompt mode for now.",
-    };
+  if (service === "openai") {
+    return await generatePortraitWithOpenAI(prompt);
   }
 
   return {
     ok: false,
-    message: `Unsupported image generation service: ${IMAGE_GENERATION_SERVICE}. Use 'manual' now, or 'gemini' later after the Gemini AI Studio integration is implemented.`,
-  };
-}
-
-async function generatePortraitWithGeminiAiStudio(prompt) {
-  return {
-    ok: false,
-    mode: "gemini",
-    prompt,
-    message:
-      "Gemini AI Studio image generation is prepared as a future mode, but is not implemented yet. Use manual image prompt mode for now.",
+    message: `Unsupported image generation service: ${IMAGE_GENERATION_SERVICE}. Set IMAGE_GENERATION_SERVICE to 'openai' or 'stable-diffusion'.`,
   };
 }
 
@@ -1219,21 +1195,6 @@ async function generatePortraitTool(args) {
   );
   const result = await generatePortraitImage(prompt);
 
-  if (result.mode === "manual" || result.mode === "gemini") {
-    character = {
-      ...character,
-      portraitPrompt: result.prompt ?? prompt,
-    };
-
-    questLog = [
-      `Portrait prompt prepared for manual image generation for ${character.name}.`,
-      ...questLog,
-    ].slice(0, 12);
-
-    saveGame();
-    return reply(result.message);
-  }
-
   if (!result.ok) {
     return reply(result.message);
   }
@@ -1393,7 +1354,7 @@ function createErisServer() {
     {
       title: "Generate Portrait",
       description:
-        "Prepares the current portrait prompt for manual image generation. Gemini AI Studio support is reserved for a future patch.",
+        "Generates a new portrait image for the Eris-Touched hero using the server's OpenAI image configuration.",
       inputSchema: emptyInputSchema,
       outputSchema: questOutputSchema,
       _meta: {
@@ -1401,7 +1362,33 @@ function createErisServer() {
       },
     },
     async () => {
-      return await generatePortraitTool({});
+      const prompt = character.portraitPrompt || createPortraitPrompt(
+        character.name,
+        character.description,
+        character.race,
+        character.hairColor,
+        character.skinColor
+      );
+      const result = await generatePortraitImage(prompt);
+
+      if (!result.ok) {
+        return reply(result.message);
+      }
+
+      character = {
+        ...character,
+        portraitPrompt: result.prompt,
+        portraitImageUrl: result.imageUrl,
+      };
+
+      questLog = [
+        `Generated a new portrait for ${character.name}.`,
+        ...questLog,
+      ].slice(0, 12);
+
+      saveGame();
+
+      return reply(`Generated a new portrait for ${character.name}.`);
     }
   );
   registerAppTool(

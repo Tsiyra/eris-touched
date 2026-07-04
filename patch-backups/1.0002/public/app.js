@@ -1,4 +1,4 @@
-const ERIS_PATCH_VERSION = "1.0002";
+const ERIS_PATCH_VERSION = "1.0001";
       const saveCharacterButton = document.querySelector(
         "#save-character-button"
       );
@@ -374,15 +374,15 @@ const ERIS_PATCH_VERSION = "1.0002";
         generatePromptButton.disabled = isGenerating;
         generateImageButton.classList.toggle("is-loading", isGenerating);
         generateImageButton.textContent = isGenerating
-          ? "Copying Prompt..."
-          : "Copy Image Prompt";
+          ? "Generating..."
+          : "Generate New Image";
 
         if (isGenerating) {
           portraitGenerationStatus.textContent =
-            "Preparing the manual image prompt.";
+            "Generating a new portrait. Please wait.";
         } else if (
           portraitGenerationStatus.textContent ===
-          "Preparing the manual image prompt."
+          "Generating a new portrait. Please wait."
         ) {
           portraitGenerationStatus.textContent = "";
         }
@@ -968,15 +968,6 @@ const ERIS_PATCH_VERSION = "1.0002";
       });
 
       generateImageButton.addEventListener("click", async () => {
-        const saved = await saveCharacterFromForm(
-          generateImageButton,
-          "Preparing Prompt..."
-        );
-
-        if (!saved) {
-          return;
-        }
-
         const promptText = portraitPrompt.textContent.trim();
 
         if (!promptText) {
@@ -984,20 +975,33 @@ const ERIS_PATCH_VERSION = "1.0002";
           return;
         }
 
-        try {
-          await navigator.clipboard.writeText(promptText);
-          generateImageButton.textContent = "Prompt Copied!";
-          portraitGenerationStatus.textContent =
-            "Image prompt copied. Generate it manually for now, then upload the finished portrait here. Gemini AI Studio support is planned for a later patch.";
+        setPortraitGenerating(true);
 
-          setTimeout(() => {
-            generateImageButton.textContent = "Copy Image Prompt";
-          }, 1400);
+        try {
+          const previousPortraitImageUrl = character.portraitImageUrl;
+          const response = await callTool("generate_portrait", {});
+          const generatedCharacter = response?.structuredContent?.character;
+          const message = getToolText(response);
+
+          if (
+            generatedCharacter?.portraitImageUrl &&
+            generatedCharacter.portraitImageUrl !== previousPortraitImageUrl
+          ) {
+            character = generatedCharacter;
+            setPortraitImageSource(generatedCharacter.portraitImageUrl);
+            renderCharacter();
+          }
+
+          if (
+            message &&
+            character.portraitImageUrl === previousPortraitImageUrl
+          ) {
+            alert(message);
+          }
         } catch (error) {
-          console.error("Could not copy prompt:", error);
-          portraitGenerationStatus.textContent =
-            "Copy failed. Open settings, use Copy Saved Prompt, then generate the portrait manually.";
-          alert("Copy failed. You can manually select and copy the saved prompt text.");
+          reportToolError(error);
+        } finally {
+          setPortraitGenerating(false);
         }
       });
 
