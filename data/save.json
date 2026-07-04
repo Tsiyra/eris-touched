@@ -1,0 +1,32 @@
+{
+  "currentQuest": null,
+  "questLog": [],
+  "nextQuestId": 1,
+  "pendingNpcChoices": [],
+  "knownNpcs": [],
+  "storyChapters": [],
+  "appSettings": {
+    "storyTone": "epic_heroic",
+    "overarchingGoal": "Build better habits"
+  },
+  "character": {
+    "name": "Eris-Touched Hero",
+    "description": "A fantasy adventurer touched by Eris, learning to turn chaos into quests.",
+    "portraitPrompt": "Create a square bust portrait of Eris-Touched Hero, an Eris-Touched focus RPG hero. Character details: A fantasy adventurer touched by Eris, learning to turn chaos into quests. Race/species: Human. Hair color: Black. Skin color: Olive. The character should feel heroic, personal, magical, and touched by chaos. Theros/Greece god portrait style: square bust portrait, polished anime-inspired fantasy character art with watercolor-and-ink texture, expressive face, crisp dark linework, translucent watercolor washes, gold ornamental details, Greek mythic clothing and jewelry, luminous divine halo or sigil behind the head, swirling magical energy, soft parchment-like rough painted border, ancient Greek ruins or symbolic mythic motifs in the background, subtle glittering specks, dramatic but elegant lighting, no text, no watermark.",
+    "portraitImageUrl": "",
+    "outfitName": "Hero Starter Outfit",
+    "race": "Human",
+    "hairColor": "Black",
+    "skinColor": "Olive"
+  },
+  "player": {
+    "name": "Eris-Touched Hero",
+    "level": 1,
+    "totalXp": 0,
+    "completedQuests": 0,
+    "coins": 0,
+    "inventory": []
+  },
+  "appVersion": "1.0003",
+  "savedAt": "2026-07-04T13:42:06.763Z"
+}
