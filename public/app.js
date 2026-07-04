@@ -1,4 +1,4 @@
-const ERIS_PATCH_VERSION = "1.0004";
+const ERIS_PATCH_VERSION = "1.0005";
       const saveCharacterButton = document.querySelector(
         "#save-character-button"
       );
@@ -49,6 +49,7 @@ const ERIS_PATCH_VERSION = "1.0004";
       const openRequestModalButton = document.querySelector("#open-request-modal-button");
       const requestModal = document.querySelector("#request-modal");
       const closeRequestButton = document.querySelector("#close-request-button");
+      const requestModalStatus = document.querySelector("#request-modal-status");
 
       const taskInput = document.querySelector("#task");
       const timerDisplay = document.querySelector("#timer");
@@ -757,6 +758,7 @@ const ERIS_PATCH_VERSION = "1.0004";
         actions.className = "pinned-request-actions";
 
         const embarkButton = document.createElement("button");
+        embarkButton.type = "button";
         embarkButton.className = "primary loading-button pinned-embark-button";
         embarkButton.textContent = "Embark";
         embarkButton.disabled = currentQuest?.status === "active";
@@ -767,8 +769,10 @@ const ERIS_PATCH_VERSION = "1.0004";
           timerStatus.textContent = "Writing the quest opening...";
 
           try {
+            setRequestModalStatus("");
             await callTool("embark_focus_quest", { requestId: request.id });
           } catch (error) {
+            console.error("Pinned request embark failed:", error);
             reportToolError(error);
             embarkButton.disabled = false;
           } finally {
@@ -926,6 +930,90 @@ const ERIS_PATCH_VERSION = "1.0004";
         renderChronicleStats();
       }
 
+      function setRequestModalStatus(message = "", tone = "") {
+        if (!requestModalStatus) return;
+        requestModalStatus.textContent = message;
+        requestModalStatus.dataset.tone = tone;
+      }
+
+      function getRequestModalTask() {
+        return taskInput?.value?.trim?.() ?? "";
+      }
+
+      function setRequestModalButtonsDisabled(isDisabled) {
+        if (startButton) startButton.disabled = isDisabled;
+        if (embarkNowButton) embarkNowButton.disabled = isDisabled;
+        setPlannedMinuteButtonsDisabled(isDisabled);
+      }
+
+      async function pinRequestFromModal() {
+        const task = getRequestModalTask();
+
+        if (!task) {
+          setRequestModalStatus("Enter a guild request first.", "warning");
+          alert("Enter a guild request first.");
+          return;
+        }
+
+        setRequestModalButtonsDisabled(true);
+        startButton.classList.add("is-loading");
+        startButton.textContent = "Pinning...";
+        setRequestModalStatus("Pinning request to the board...", "working");
+
+        try {
+          await callTool("pin_focus_quest", {
+            task,
+            plannedMinutes,
+          });
+          setRequestModalStatus("Pinned to the request board.", "success");
+          closeRequestModal();
+        } catch (error) {
+          console.error("Pin request failed:", error);
+          setRequestModalStatus(error.message || "Pin request failed.", "error");
+          reportToolError(error);
+        } finally {
+          startButton.classList.remove("is-loading");
+          startButton.textContent = "Pin Request";
+          setRequestModalButtonsDisabled(false);
+        }
+      }
+
+      async function embarkRequestFromModal() {
+        const task = getRequestModalTask();
+
+        if (!task) {
+          setRequestModalStatus("Enter a guild request first.", "warning");
+          alert("Enter a guild request first.");
+          return;
+        }
+
+        setRequestModalButtonsDisabled(true);
+        embarkNowButton.classList.add("is-loading");
+        embarkNowButton.textContent = "Embarking...";
+        timerStatus.textContent = "Writing the quest opening...";
+        setRequestModalStatus("Starting the expedition...", "working");
+
+        try {
+          await callTool("embark_focus_quest", {
+            task,
+            plannedMinutes,
+          });
+          setRequestModalStatus("Expedition started.", "success");
+          closeRequestModal();
+        } catch (error) {
+          console.error("Embark request failed:", error);
+          setRequestModalStatus(error.message || "Embark failed.", "error");
+          reportToolError(error);
+        } finally {
+          embarkNowButton.classList.remove("is-loading");
+          embarkNowButton.textContent = "Embark";
+          setRequestModalButtonsDisabled(false);
+          if (!questStarted) {
+            updateTimerDisplay();
+          }
+        }
+      }
+
       function openSettingsModal() {
         settingsModal.style.display = "grid";
       }
@@ -935,12 +1023,15 @@ const ERIS_PATCH_VERSION = "1.0004";
       }
 
       function openRequestModal() {
+        if (!requestModal) return;
         requestModal.style.display = "grid";
+        setRequestModalStatus("");
         updatePlannedMinuteButtons();
         setTimeout(() => taskInput?.focus?.(), 0);
       }
 
       function closeRequestModal() {
+        if (!requestModal) return;
         requestModal.style.display = "none";
       }
 
@@ -1029,10 +1120,19 @@ const ERIS_PATCH_VERSION = "1.0004";
         }
 
         const response = await fetch(url, options);
-        const data = await response.json();
+        const responseText = await response.text();
+        let data = {};
+
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+          data = {
+            error: responseText || "API request failed",
+          };
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || "API request failed");
+          throw new Error(data.error || data.message || "API request failed");
         }
 
         updateFromResponse(data);
@@ -1138,11 +1238,11 @@ const ERIS_PATCH_VERSION = "1.0004";
         closeSettingsModal();
       });
 
-      openRequestModalButton.addEventListener("click", () => {
+      openRequestModalButton?.addEventListener("click", () => {
         openRequestModal();
       });
 
-      closeRequestButton.addEventListener("click", () => {
+      closeRequestButton?.addEventListener("click", () => {
         closeRequestModal();
       });
 
@@ -1300,62 +1400,12 @@ const ERIS_PATCH_VERSION = "1.0004";
         }
       });
 
-      startButton.addEventListener("click", async () => {
-        const task = taskInput.value.trim();
-
-        if (!task) {
-          alert("Enter a guild request first.");
-          return;
-        }
-
-        startButton.disabled = true;
-        startButton.classList.add("is-loading");
-        startButton.textContent = "Pinning...";
-
-        try {
-          await callTool("pin_focus_quest", {
-            task,
-            plannedMinutes,
-          });
-          closeRequestModal();
-        } catch (error) {
-          reportToolError(error);
-        } finally {
-          startButton.classList.remove("is-loading");
-          startButton.textContent = "Pin Request";
-          startButton.disabled = false;
-        }
+      startButton?.addEventListener("click", () => {
+        pinRequestFromModal();
       });
 
-      embarkNowButton.addEventListener("click", async () => {
-        const task = taskInput.value.trim();
-
-        if (!task) {
-          alert("Enter a guild request first.");
-          return;
-        }
-
-        embarkNowButton.disabled = true;
-        embarkNowButton.classList.add("is-loading");
-        embarkNowButton.textContent = "Embarking...";
-        timerStatus.textContent = "Writing the quest opening...";
-
-        try {
-          await callTool("embark_focus_quest", {
-            task,
-            plannedMinutes,
-          });
-          closeRequestModal();
-        } catch (error) {
-          reportToolError(error);
-        } finally {
-          embarkNowButton.classList.remove("is-loading");
-          embarkNowButton.textContent = "Embark";
-          embarkNowButton.disabled = false;
-          if (!questStarted) {
-            updateTimerDisplay();
-          }
-        }
+      embarkNowButton?.addEventListener("click", () => {
+        embarkRequestFromModal();
       });
 
       pauseButton.addEventListener("click", () => {

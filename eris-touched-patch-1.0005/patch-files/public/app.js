@@ -1,4 +1,4 @@
-const ERIS_PATCH_VERSION = "1.0003";
+const ERIS_PATCH_VERSION = "1.0005";
       const saveCharacterButton = document.querySelector(
         "#save-character-button"
       );
@@ -46,11 +46,17 @@ const ERIS_PATCH_VERSION = "1.0003";
       const generateImageButton = document.querySelector("#generate-image-button");
       const portraitGenerationStatus = document.querySelector("#portrait-generation-status");
 
+      const openRequestModalButton = document.querySelector("#open-request-modal-button");
+      const requestModal = document.querySelector("#request-modal");
+      const closeRequestButton = document.querySelector("#close-request-button");
+      const requestModalStatus = document.querySelector("#request-modal-status");
+
       const taskInput = document.querySelector("#task");
       const timerDisplay = document.querySelector("#timer");
       const timerStatus = document.querySelector("#timer-status");
 
       const startButton = document.querySelector("#start-button");
+      const embarkNowButton = document.querySelector("#embark-now-button");
       const pauseButton = document.querySelector("#pause-button");
       const resumeButton = document.querySelector("#resume-button");
       const completeButton = document.querySelector("#complete-button");
@@ -68,12 +74,12 @@ const ERIS_PATCH_VERSION = "1.0003";
       const levelLabel = document.querySelector("#level-label");
       const inventoryList = document.querySelector("#inventory-list");
 
-      const questboardPinnedTitle = document.querySelector("#questboard-pinned-title");
-      const questboardPinnedDescription = document.querySelector("#questboard-pinned-description");
-      const questboardPinnedTime = document.querySelector("#questboard-pinned-time");
-      const questboardPinnedXp = document.querySelector("#questboard-pinned-xp");
-      const questboardPinnedCoins = document.querySelector("#questboard-pinned-coins");
-      const questboardPinnedLoot = document.querySelector("#questboard-pinned-loot");
+      const pinnedRequestList = document.querySelector("#pinned-request-list");
+      const pinnedRequestCount = document.querySelector("#pinned-request-count");
+      const activeQuestEmpty = document.querySelector("#active-quest-empty");
+      const activeQuestDetails = document.querySelector("#active-quest-details");
+      const activeQuestTitle = document.querySelector("#active-quest-title");
+      const activeQuestMeta = document.querySelector("#active-quest-meta");
       const questboardCharterGoal = document.querySelector("#questboard-charter-goal");
       const questboardCharterProgressLabel = document.querySelector("#questboard-charter-progress-label");
       const questboardCharterProgressFill = document.querySelector("#questboard-charter-progress-fill");
@@ -117,17 +123,13 @@ const ERIS_PATCH_VERSION = "1.0003";
           if (!Number.isFinite(nextMinutes)) return;
           plannedMinutes = nextMinutes;
           updatePlannedMinuteButtons();
-          renderQuestboardPinnedCard();
         });
-      });
-
-      taskInput.addEventListener("input", () => {
-        renderQuestboardPinnedCard();
       });
 
       showScreen("questboard");
 
       let currentQuest = null;
+      let pinnedRequests = [];
       let log = [];
       let pendingNpcChoices = [];
       let knownNpcs = [];
@@ -249,20 +251,14 @@ const ERIS_PATCH_VERSION = "1.0003";
         timerInterval = setInterval(updateTimerDisplay, 1000);
         updateTimerDisplay();
 
-        startButton.disabled = true;
         pauseButton.disabled = false;
         resumeButton.disabled = true;
         completeButton.disabled = false;
-        taskInput.disabled = true;
-        setPlannedMinuteButtonsDisabled(true);
       }
 
       function syncTimerWithQuest() {
         if (currentQuest?.status === "active") {
           if (localTimerQuestId !== currentQuest.id || !questStarted) {
-            if (document.activeElement !== taskInput) {
-              taskInput.value = currentQuest.task;
-            }
             startLocalTimer(currentQuest);
           }
 
@@ -313,12 +309,9 @@ const ERIS_PATCH_VERSION = "1.0003";
         clearInterval(timerInterval);
         updateTimerDisplay();
 
-        startButton.disabled = false;
         pauseButton.disabled = true;
         resumeButton.disabled = true;
         completeButton.disabled = true;
-        taskInput.disabled = false;
-        setPlannedMinuteButtonsDisabled(false);
       }
 
       function readFileAsDataUrl(file) {
@@ -727,45 +720,121 @@ const ERIS_PATCH_VERSION = "1.0003";
         });
       }
 
-      function renderQuestboardPinnedCard() {
-        if (!questboardPinnedTitle) return;
+      function createPinnedRequestCard(request) {
+        const card = document.createElement("div");
+        card.className = "pinned-request-card";
 
-        const isActive = currentQuest?.status === "active";
-        const isCompleted = currentQuest?.status === "completed";
-        const displayTask = currentQuest?.task || getDraftTask();
-        const displayMinutes = isCompleted
-          ? currentQuest.actualMinutes ?? plannedMinutes
-          : currentQuest?.plannedMinutes ?? plannedMinutes;
-        const displayXp = currentQuest?.xp ?? getEstimatedXp(displayMinutes);
-        const displayCoins = currentQuest?.coins ?? getEstimatedCoins(displayMinutes);
-        const displayLoot = currentQuest?.loot ?? "Guaranteed Loot";
+        const title = document.createElement("div");
+        title.className = "pinned-request-title";
+        title.textContent = request.task;
 
-        questboardPinnedTitle.textContent = displayTask;
+        const description = document.createElement("div");
+        description.className = "pinned-request-description";
+        description.textContent = "Ready on the board. Embark when this request is the one you want to focus on.";
 
-        if (questboardPinnedDescription) {
-          if (isActive) {
-            questboardPinnedDescription.textContent =
-              "Request accepted. Focus the work, then turn it in when the posting is complete.";
-          } else if (isCompleted) {
-            questboardPinnedDescription.textContent =
-              "Request turned in. The guild has recorded your progress and reward.";
-          } else {
-            questboardPinnedDescription.textContent =
-              "Draft the request, choose an estimated time, and accept the posting.";
+        const meta = document.createElement("div");
+        meta.className = "pinned-request-meta";
+
+        const minutes = request.plannedMinutes ?? 25;
+        const rewards = [
+          ["⏱", `${minutes} min`],
+          ["XP", `${getEstimatedXp(minutes)} XP`],
+          ["◎", `${getEstimatedCoins(minutes)} Coins`],
+        ];
+
+        for (const [icon, value] of rewards) {
+          const span = document.createElement("span");
+          const iconSpan = document.createElement("span");
+          iconSpan.className = "reward-icon";
+          iconSpan.textContent = icon;
+          const strong = document.createElement("strong");
+          strong.textContent = value;
+          span.appendChild(iconSpan);
+          span.appendChild(strong);
+          meta.appendChild(span);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "pinned-request-actions";
+
+        const embarkButton = document.createElement("button");
+        embarkButton.type = "button";
+        embarkButton.className = "primary loading-button pinned-embark-button";
+        embarkButton.textContent = "Embark";
+        embarkButton.disabled = currentQuest?.status === "active";
+        embarkButton.addEventListener("click", async () => {
+          embarkButton.disabled = true;
+          embarkButton.classList.add("is-loading");
+          embarkButton.textContent = "Embarking...";
+          timerStatus.textContent = "Writing the quest opening...";
+
+          try {
+            setRequestModalStatus("");
+            await callTool("embark_focus_quest", { requestId: request.id });
+          } catch (error) {
+            console.error("Pinned request embark failed:", error);
+            reportToolError(error);
+            embarkButton.disabled = false;
+          } finally {
+            embarkButton.classList.remove("is-loading");
+            embarkButton.textContent = "Embark";
           }
+        });
+
+        actions.appendChild(embarkButton);
+        card.appendChild(title);
+        card.appendChild(description);
+        card.appendChild(meta);
+        card.appendChild(actions);
+
+        return card;
+      }
+
+      function renderPinnedRequests() {
+        if (!pinnedRequestList) return;
+
+        pinnedRequestList.innerHTML = "";
+
+        if (pinnedRequestCount) {
+          pinnedRequestCount.textContent = String(pinnedRequests.length);
         }
 
-        if (questboardPinnedTime) {
-          questboardPinnedTime.textContent = `${displayMinutes} min`;
+        if (!pinnedRequests.length) {
+          pinnedRequestList.className = "pinned-request-list empty";
+          pinnedRequestList.textContent = "No pinned requests yet. Use Guild Request to create one.";
+          return;
         }
-        if (questboardPinnedXp) {
-          questboardPinnedXp.textContent = String(displayXp);
+
+        pinnedRequestList.className = "pinned-request-list";
+
+        for (const request of pinnedRequests) {
+          pinnedRequestList.appendChild(createPinnedRequestCard(request));
         }
-        if (questboardPinnedCoins) {
-          questboardPinnedCoins.textContent = String(displayCoins);
+      }
+
+      function renderActiveQuest() {
+        const isActive = currentQuest?.status === "active";
+
+        if (activeQuestEmpty) {
+          activeQuestEmpty.style.display = isActive ? "none" : "block";
         }
-        if (questboardPinnedLoot) {
-          questboardPinnedLoot.textContent = displayLoot;
+
+        if (activeQuestDetails) {
+          activeQuestDetails.style.display = isActive ? "block" : "none";
+        }
+
+        if (!isActive) {
+          return;
+        }
+
+        const planned = currentQuest.plannedMinutes ?? plannedMinutes;
+
+        if (activeQuestTitle) {
+          activeQuestTitle.textContent = currentQuest.task;
+        }
+
+        if (activeQuestMeta) {
+          activeQuestMeta.textContent = `${planned} min estimate · ${getEstimatedXp(planned)} XP · ${getEstimatedCoins(planned)} Guild Coins`;
         }
       }
 
@@ -852,12 +921,97 @@ const ERIS_PATCH_VERSION = "1.0003";
         renderKnownNpcs();
         renderInventory();
         renderQuest();
-        renderQuestboardPinnedCard();
+        renderPinnedRequests();
+        renderActiveQuest();
         renderQuestboardCharter();
         updatePlannedMinuteButtons();
         renderStoryChapters();
         renderStoryLog();
         renderChronicleStats();
+      }
+
+      function setRequestModalStatus(message = "", tone = "") {
+        if (!requestModalStatus) return;
+        requestModalStatus.textContent = message;
+        requestModalStatus.dataset.tone = tone;
+      }
+
+      function getRequestModalTask() {
+        return taskInput?.value?.trim?.() ?? "";
+      }
+
+      function setRequestModalButtonsDisabled(isDisabled) {
+        if (startButton) startButton.disabled = isDisabled;
+        if (embarkNowButton) embarkNowButton.disabled = isDisabled;
+        setPlannedMinuteButtonsDisabled(isDisabled);
+      }
+
+      async function pinRequestFromModal() {
+        const task = getRequestModalTask();
+
+        if (!task) {
+          setRequestModalStatus("Enter a guild request first.", "warning");
+          alert("Enter a guild request first.");
+          return;
+        }
+
+        setRequestModalButtonsDisabled(true);
+        startButton.classList.add("is-loading");
+        startButton.textContent = "Pinning...";
+        setRequestModalStatus("Pinning request to the board...", "working");
+
+        try {
+          await callTool("pin_focus_quest", {
+            task,
+            plannedMinutes,
+          });
+          setRequestModalStatus("Pinned to the request board.", "success");
+          closeRequestModal();
+        } catch (error) {
+          console.error("Pin request failed:", error);
+          setRequestModalStatus(error.message || "Pin request failed.", "error");
+          reportToolError(error);
+        } finally {
+          startButton.classList.remove("is-loading");
+          startButton.textContent = "Pin Request";
+          setRequestModalButtonsDisabled(false);
+        }
+      }
+
+      async function embarkRequestFromModal() {
+        const task = getRequestModalTask();
+
+        if (!task) {
+          setRequestModalStatus("Enter a guild request first.", "warning");
+          alert("Enter a guild request first.");
+          return;
+        }
+
+        setRequestModalButtonsDisabled(true);
+        embarkNowButton.classList.add("is-loading");
+        embarkNowButton.textContent = "Embarking...";
+        timerStatus.textContent = "Writing the quest opening...";
+        setRequestModalStatus("Starting the expedition...", "working");
+
+        try {
+          await callTool("embark_focus_quest", {
+            task,
+            plannedMinutes,
+          });
+          setRequestModalStatus("Expedition started.", "success");
+          closeRequestModal();
+        } catch (error) {
+          console.error("Embark request failed:", error);
+          setRequestModalStatus(error.message || "Embark failed.", "error");
+          reportToolError(error);
+        } finally {
+          embarkNowButton.classList.remove("is-loading");
+          embarkNowButton.textContent = "Embark";
+          setRequestModalButtonsDisabled(false);
+          if (!questStarted) {
+            updateTimerDisplay();
+          }
+        }
       }
 
       function openSettingsModal() {
@@ -866,6 +1020,19 @@ const ERIS_PATCH_VERSION = "1.0003";
 
       function closeSettingsModal() {
         settingsModal.style.display = "none";
+      }
+
+      function openRequestModal() {
+        if (!requestModal) return;
+        requestModal.style.display = "grid";
+        setRequestModalStatus("");
+        updatePlannedMinuteButtons();
+        setTimeout(() => taskInput?.focus?.(), 0);
+      }
+
+      function closeRequestModal() {
+        if (!requestModal) return;
+        requestModal.style.display = "none";
       }
 
       function openPortraitModal() {
@@ -881,6 +1048,10 @@ const ERIS_PATCH_VERSION = "1.0003";
 
         if (data?.quest !== undefined) {
           currentQuest = data.quest;
+        }
+
+        if (Array.isArray(data?.pinnedRequests)) {
+          pinnedRequests = data.pinnedRequests;
         }
 
         if (Array.isArray(data?.log)) {
@@ -921,6 +1092,8 @@ const ERIS_PATCH_VERSION = "1.0003";
       async function callTool(name, payload) {
         const endpointMap = {
           get_progress: { method: "GET", path: "/api/progress" },
+          pin_focus_quest: { method: "POST", path: "/api/pin-quest" },
+          embark_focus_quest: { method: "POST", path: "/api/embark-quest" },
           start_focus_quest: { method: "POST", path: "/api/start-quest" },
           complete_focus_quest: { method: "POST", path: "/api/complete-quest" },
           update_character: { method: "POST", path: "/api/update-character" },
@@ -947,10 +1120,19 @@ const ERIS_PATCH_VERSION = "1.0003";
         }
 
         const response = await fetch(url, options);
-        const data = await response.json();
+        const responseText = await response.text();
+        let data = {};
+
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+          data = {
+            error: responseText || "API request failed",
+          };
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || "API request failed");
+          throw new Error(data.error || data.message || "API request failed");
         }
 
         updateFromResponse(data);
@@ -1054,6 +1236,14 @@ const ERIS_PATCH_VERSION = "1.0003";
 
       closeSettingsButton.addEventListener("click", () => {
         closeSettingsModal();
+      });
+
+      openRequestModalButton?.addEventListener("click", () => {
+        openRequestModal();
+      });
+
+      closeRequestButton?.addEventListener("click", () => {
+        closeRequestModal();
       });
 
       questboardPortraitShell.addEventListener("click", () => {
@@ -1210,34 +1400,12 @@ const ERIS_PATCH_VERSION = "1.0003";
         }
       });
 
-      startButton.addEventListener("click", async () => {
-        const task = taskInput.value.trim();
+      startButton?.addEventListener("click", () => {
+        pinRequestFromModal();
+      });
 
-        if (!task) {
-          alert("Enter a guild request first.");
-          return;
-        }
-
-        startButton.disabled = true;
-        startButton.classList.add("is-loading");
-        startButton.textContent = "Accepting...";
-        timerStatus.textContent = "Writing the quest opening...";
-
-        try {
-          await callTool("start_focus_quest", {
-            task,
-            plannedMinutes,
-          });
-        } catch (error) {
-          reportToolError(error);
-        } finally {
-          startButton.classList.remove("is-loading");
-          startButton.textContent = "Accept Request";
-          if (!questStarted) {
-            startButton.disabled = false;
-            updateTimerDisplay();
-          }
-        }
+      embarkNowButton?.addEventListener("click", () => {
+        embarkRequestFromModal();
       });
 
       pauseButton.addEventListener("click", () => {

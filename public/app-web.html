@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Eris-Touched Guild Questboard</title>
-    <meta name="eris-app-version" content="1.0004" />
+    <meta name="eris-app-version" content="1.0005" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
 
@@ -39,7 +39,7 @@
           </div>
         </section>
 
-        <button id="open-request-modal-button" class="primary questboard-guild-request-button" type="button">
+        <button id="open-request-modal-button" class="primary questboard-guild-request-button" type="button" aria-haspopup="dialog">
           Guild Request
         </button>
 
@@ -286,12 +286,13 @@
             </div>
 
             <div class="request-modal-actions">
-              <button class="primary loading-button" id="start-button">Pin Request</button>
-              <button class="secondary loading-button" id="embark-now-button">Embark</button>
+              <button class="primary loading-button" id="start-button" type="button">Pin Request</button>
+              <button class="secondary loading-button" id="embark-now-button" type="button">Embark</button>
             </div>
             <p class="request-modal-help">
               Pin Request saves it to the board. Embark starts the timer now.
             </p>
+            <div id="request-modal-status" class="request-modal-status" aria-live="polite"></div>
           </div>
         </div>
       </div>

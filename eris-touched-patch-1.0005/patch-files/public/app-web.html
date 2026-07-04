@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Eris-Touched Guild Questboard</title>
-    <meta name="eris-app-version" content="1.0003" />
+    <meta name="eris-app-version" content="1.0005" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
 
@@ -19,13 +19,12 @@
         <div class="screen-header questboard-title-plate">
           <div class="page-title">Questboard</div>
           <div class="screen-subtitle">
-            Accept requests, gather focus, and turn chaos into progress.
+            Pin requests first, then embark when you are ready to focus.
           </div>
         </div>
 
-        <section class="questboard-feature-card" aria-label="Questboard portrait scene">
-          <div class="questboard-feature-label">Guild Portrait</div>
-          <div class="questboard-feature-image" id="questboard-portrait-shell">
+        <section class="questboard-hero-card" aria-label="Questboard portrait">
+          <div class="hero-portrait-shell questboard-portrait-ring" id="questboard-portrait-shell">
             <div class="hero-portrait-content">
               <img id="questboard-portrait-image" class="hero-portrait-image" alt="Character portrait" />
               <div id="questboard-portrait-placeholder" class="hero-portrait-placeholder questboard-feature-placeholder">
@@ -40,69 +39,39 @@
           </div>
         </section>
 
-        <section class="questboard-pinned-card">
-          <div class="questboard-card-pin left-pin"></div>
-          <div class="questboard-card-pin right-pin"></div>
-          <div class="questboard-ribbon">Pinned Request</div>
-          <h2 id="questboard-pinned-title">Write the Guild Brief</h2>
-          <p id="questboard-pinned-description">
-            Draft the next request for the guild.
-          </p>
-          <div class="questboard-reward-row" aria-label="Pinned request rewards">
-            <span><span class="reward-icon">⏱</span><strong id="questboard-pinned-time">45 min</strong></span>
-            <span><span class="reward-icon">XP</span><strong id="questboard-pinned-xp">360</strong></span>
-            <span><span class="reward-icon">◎</span><strong id="questboard-pinned-coins">450</strong></span>
-            <span><span class="reward-icon">✦</span><strong id="questboard-pinned-loot">Guaranteed Loot</strong></span>
+        <button id="open-request-modal-button" class="primary questboard-guild-request-button" type="button" aria-haspopup="dialog">
+          Guild Request
+        </button>
+
+        <section class="panel questboard-pinned-list-card">
+          <div class="questboard-list-header">
+            <h2 class="page-title-secondary">Pinned Requests</h2>
+            <span id="pinned-request-count" class="questboard-count-pill">0</span>
+          </div>
+          <div id="pinned-request-list" class="pinned-request-list empty">
+            No pinned requests yet. Use Guild Request to create one.
           </div>
         </section>
 
-        <section class="panel questboard-add-card">
-          <h2 class="page-title-secondary">Add Guild Request</h2>
-          <label for="task">What needs to be done?</label>
-          <input id="task" value="Clean my room" placeholder="What needs to be done?" />
-
-          <div class="questboard-estimate-row">
-            <div class="questboard-estimate-label">Est. Time</div>
-            <div class="questboard-time-presets" aria-label="Estimated time presets">
-              <button type="button" class="questboard-time-button" data-planned-minutes="25">25 min</button>
-              <button type="button" class="questboard-time-button" data-planned-minutes="30">30 min</button>
-              <button type="button" class="questboard-time-button active" data-planned-minutes="45">45 min</button>
-              <button type="button" class="questboard-time-button" data-planned-minutes="60">60 min</button>
-            </div>
+        <section class="panel questboard-active-card">
+          <h2 class="page-title-secondary">Active Expedition</h2>
+          <div id="active-quest-empty" class="empty">
+            No active request. Embark from a pinned request when you are ready.
+          </div>
+          <div id="active-quest-details" style="display: none;">
+            <div id="active-quest-title" class="questboard-active-title">No active request</div>
+            <div id="active-quest-meta" class="questboard-active-meta"></div>
           </div>
 
-          <div class="timer"> 
+          <div class="timer">
             <div id="timer">00:00:00</div>
           </div>
           <div id="timer-status" class="status">No request started.</div>
 
-          <div class="questboard-action-grid">
-            <button class="primary loading-button questboard-accept-button" id="start-button">Accept Request</button>
+          <div class="questboard-action-grid questboard-active-actions">
             <button class="secondary" id="pause-button" disabled>Pause</button>
             <button class="secondary" id="resume-button" disabled>Resume</button>
             <button class="danger loading-button" id="complete-button" disabled>Turn In Request</button>
-          </div>
-        </section>
-
-        <section class="panel questboard-charter-card">
-          <div class="questboard-charter-content">
-            <div>
-              <h2 class="page-title-secondary">Guild Charter</h2>
-              <div id="questboard-charter-goal" class="questboard-charter-goal">
-                Build better habits
-              </div>
-              <p class="questboard-charter-text">
-                We rise by focusing our minds and finishing what we start.
-              </p>
-            </div>
-            <div class="questboard-charter-emblem" aria-hidden="true">⚜</div>
-          </div>
-          <div class="questboard-charter-progress-row">
-            <span>Progress to Goal</span>
-            <strong id="questboard-charter-progress-label">0%</strong>
-          </div>
-          <div class="questboard-charter-bar">
-            <div id="questboard-charter-progress-fill"></div>
           </div>
         </section>
 
@@ -297,6 +266,37 @@
         </div>
       </div>
 
+      <div id="request-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-panel request-modal-panel">
+          <button id="close-request-button" class="modal-close-button">✕</button>
+          <h2 class="page-title-secondary">Create Guild Request</h2>
+
+          <div class="modal-section request-modal-section">
+            <label for="task">Guild Request</label>
+            <input id="task" value="Clean my room" placeholder="What needs to be done?" />
+
+            <div class="questboard-estimate-row">
+              <div class="questboard-estimate-label">Est. Time</div>
+              <div class="questboard-time-presets" aria-label="Estimated time presets">
+                <button type="button" class="questboard-time-button" data-planned-minutes="25">25 min</button>
+                <button type="button" class="questboard-time-button" data-planned-minutes="30">30 min</button>
+                <button type="button" class="questboard-time-button active" data-planned-minutes="45">45 min</button>
+                <button type="button" class="questboard-time-button" data-planned-minutes="60">60 min</button>
+              </div>
+            </div>
+
+            <div class="request-modal-actions">
+              <button class="primary loading-button" id="start-button" type="button">Pin Request</button>
+              <button class="secondary loading-button" id="embark-now-button" type="button">Embark</button>
+            </div>
+            <p class="request-modal-help">
+              Pin Request saves it to the board. Embark starts the timer now.
+            </p>
+            <div id="request-modal-status" class="request-modal-status" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="portrait-modal" class="modal-overlay" style="display: none;">
         <div class="modal-panel portrait-modal-panel">
           <button id="close-portrait-button" class="modal-close-button">✕</button>
@@ -328,6 +328,28 @@
             The path of your guild's progress toward the charter.
           </div>
         </div>
+
+        <section class="panel journey-charter-card questboard-charter-card">
+          <div class="questboard-charter-content">
+            <div>
+              <h2 class="page-title-secondary">Guild Charter</h2>
+              <div id="questboard-charter-goal" class="questboard-charter-goal">
+                Build better habits
+              </div>
+              <p class="questboard-charter-text">
+                We rise by focusing our minds and finishing what we start.
+              </p>
+            </div>
+            <div class="questboard-charter-emblem" aria-hidden="true">⚜</div>
+          </div>
+          <div class="questboard-charter-progress-row">
+            <span>Progress to Goal</span>
+            <strong id="questboard-charter-progress-label">0%</strong>
+          </div>
+          <div class="questboard-charter-bar">
+            <div id="questboard-charter-progress-fill"></div>
+          </div>
+        </section>
 
         <section class="panel">
           <h2 class="page-title-secondary">Guild Chronicle</h2>

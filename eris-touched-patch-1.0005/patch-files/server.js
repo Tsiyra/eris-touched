@@ -21,7 +21,7 @@ import { z } from "zod";
 const PUBLIC_DIR = "public";
 const appHtml = readFileSync(join(PUBLIC_DIR, "app-web.html"), "utf8");
 const APP_URI = "ui://widget/eris-focus.html";
-const ERIS_PATCH_VERSION = "1.0003";
+const ERIS_PATCH_VERSION = "1.0005";
 
 const DATA_DIR = process.env.ERIS_DATA_DIR ?? "data";
 const SAVE_FILE = join(DATA_DIR, "save.json");
@@ -49,6 +49,7 @@ const THEROS_PORTRAIT_STYLE =
   "Theros/Greece god portrait style: square bust portrait, polished anime-inspired fantasy character art with watercolor-and-ink texture, expressive face, crisp dark linework, translucent watercolor washes, gold ornamental details, Greek mythic clothing and jewelry, luminous divine halo or sigil behind the head, swirling magical energy, soft parchment-like rough painted border, ancient Greek ruins or symbolic mythic motifs in the background, subtle glittering specks, dramatic but elegant lighting, no text, no watermark.";
 
 let currentQuest = null;
+let pinnedRequests = [];
 let questLog = [];
 let nextQuestId = 1;
 let pendingNpcChoices = [];
@@ -164,6 +165,7 @@ function saveGame() {
 
   const saveData = {
     currentQuest,
+    pinnedRequests,
     questLog,
     nextQuestId,
     pendingNpcChoices,
@@ -193,6 +195,9 @@ function loadGame() {
     const saveData = JSON.parse(rawSave);
 
     currentQuest = saveData.currentQuest ?? null;
+    pinnedRequests = Array.isArray(saveData.pinnedRequests)
+      ? saveData.pinnedRequests
+      : [];
     questLog = Array.isArray(saveData.questLog) ? saveData.questLog : [];
     nextQuestId = Math.max(1, Math.floor(toFiniteNumber(saveData.nextQuestId, 1)));
 
@@ -301,6 +306,12 @@ const questSchema = z.object({
   rewardSummary: z.string().optional(),
   story: z.string().optional(),
 });
+const pinnedRequestSchema = z.object({
+  id: z.string(),
+  task: z.string(),
+  plannedMinutes: z.number(),
+  createdAt: z.string(),
+});
 const storyChapterSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -339,6 +350,7 @@ const npcSchema = z.object({
 
 const questOutputSchema = {
   quest: questSchema.nullable(),
+  pinnedRequests: z.array(pinnedRequestSchema),
   log: z.array(z.string()),
   player: playerSchema,
   pendingNpcChoices: z.array(npcSchema),
@@ -352,6 +364,14 @@ const questOutputSchema = {
 const startQuestInputSchema = {
   task: z.string().min(1),
   plannedMinutes: z.number().min(1).max(600),
+};
+
+const pinQuestInputSchema = startQuestInputSchema;
+
+const embarkQuestInputSchema = {
+  requestId: z.string().min(1).optional(),
+  task: z.string().min(1).optional(),
+  plannedMinutes: z.number().min(1).max(600).optional(),
 };
 
 const completeQuestInputSchema = {
@@ -422,6 +442,7 @@ function reply(message) {
     content: message ? [{ type: "text", text: message }] : [],
     structuredContent: {
       quest: currentQuest,
+      pinnedRequests,
       log: questLog,
       player,
       pendingNpcChoices,
@@ -1017,18 +1038,54 @@ function generateNpcChoices() {
 }
 
 // Standalone tool functions for HTTP API
-async function startQuestTool(args) {
+async function pinQuestTool(args) {
   const task = args?.task?.trim?.() ?? "";
   const plannedMinutes = clampNumber(args?.plannedMinutes, 1, 600, 25);
 
   if (!task) {
-    return reply("Missing quest task.");
+    return reply("Missing guild request task.");
   }
 
+  const pinnedRequest = {
+    id: `pinned-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    task,
+    plannedMinutes,
+    createdAt: new Date().toISOString(),
+  };
+
+  pinnedRequests = [pinnedRequest, ...pinnedRequests].slice(0, 20);
+  questLog = [
+    `Pinned guild request: ${task} (${plannedMinutes} min).`,
+    ...questLog,
+  ].slice(0, 12);
+
+  saveGame();
+
+  return reply(`Pinned guild request: ${task}`);
+}
+
+async function embarkQuestTool(args) {
   if (currentQuest?.status === "active") {
     return reply(
-      `A request is already active: ${currentQuest.task}. Turn it in before accepting another.`
+      `A request is already active: ${currentQuest.task}. Turn it in before embarking on another.`
     );
+  }
+
+  const requestId = args?.requestId;
+  const pinnedRequest = requestId
+    ? pinnedRequests.find((request) => request.id === requestId)
+    : null;
+
+  const task = pinnedRequest?.task ?? args?.task?.trim?.() ?? "";
+  const plannedMinutes = clampNumber(
+    pinnedRequest?.plannedMinutes ?? args?.plannedMinutes,
+    1,
+    600,
+    25
+  );
+
+  if (!task) {
+    return reply("Missing guild request task.");
   }
 
   currentQuest = {
@@ -1039,12 +1096,20 @@ async function startQuestTool(args) {
     status: "active",
   };
 
+  if (pinnedRequest) {
+    pinnedRequests = pinnedRequests.filter((request) => request.id !== pinnedRequest.id);
+  }
+
   const opening = await createQuestOpening(task);
   questLog = [opening, ...questLog].slice(0, 12);
 
   saveGame();
 
-  return reply(`Started focus quest: ${task}`);
+  return reply(`Embarked on guild request: ${task}`);
+}
+
+async function startQuestTool(args) {
+  return await embarkQuestTool(args);
 }
 
 async function finalizeQuestCompletion(actualMinutes) {
@@ -1467,6 +1532,42 @@ function createErisServer() {
 
   registerAppTool(
     server,
+    "pin_focus_quest",
+    {
+      title: "Pin Guild Request",
+      description:
+        "Pins a guild request to the questboard without starting the timer.",
+      inputSchema: pinQuestInputSchema,
+      outputSchema: questOutputSchema,
+      _meta: {
+        ui: { resourceUri: APP_URI },
+      },
+    },
+    async (args) => {
+      return await pinQuestTool(args);
+    }
+  );
+
+  registerAppTool(
+    server,
+    "embark_focus_quest",
+    {
+      title: "Embark on Guild Request",
+      description:
+        "Starts the timer for a pinned or newly entered guild request.",
+      inputSchema: embarkQuestInputSchema,
+      outputSchema: questOutputSchema,
+      _meta: {
+        ui: { resourceUri: APP_URI },
+      },
+    },
+    async (args) => {
+      return await embarkQuestTool(args);
+    }
+  );
+
+  registerAppTool(
+    server,
     "start_focus_quest",
     {
       title: "Start Focus Quest",
@@ -1721,6 +1822,52 @@ function createHttpServer() {
     const response = reply("Loaded saved progress.");
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify(response));
+    return;
+  }
+
+  if (url.pathname === "/api/pin-quest" && req.method === "POST") {
+    if (!applyCorsHeaders(req, res)) {
+      res.writeHead(403).end("Origin not allowed");
+      return;
+    }
+    try {
+      const body = await new Promise((resolve, reject) => {
+        let data = "";
+        req.on("data", chunk => data += chunk);
+        req.on("end", () => resolve(data));
+        req.on("error", reject);
+      });
+      const args = JSON.parse(body);
+      const response = await pinQuestTool(args);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(response));
+    } catch (error) {
+      console.error("Pin quest error:", error);
+      res.writeHead(500).end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/embark-quest" && req.method === "POST") {
+    if (!applyCorsHeaders(req, res)) {
+      res.writeHead(403).end("Origin not allowed");
+      return;
+    }
+    try {
+      const body = await new Promise((resolve, reject) => {
+        let data = "";
+        req.on("data", chunk => data += chunk);
+        req.on("end", () => resolve(data));
+        req.on("error", reject);
+      });
+      const args = JSON.parse(body);
+      const response = await embarkQuestTool(args);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(response));
+    } catch (error) {
+      console.error("Embark quest error:", error);
+      res.writeHead(500).end(JSON.stringify({ error: error.message }));
+    }
     return;
   }
 

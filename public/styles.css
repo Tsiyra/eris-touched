@@ -1308,7 +1308,7 @@ body {
   }
 }
 
-/* Patch 1.0004: cleaner Questboard flow with pinned requests and modal creation */
+/* Patch 1.0005: cleaner Questboard flow with pinned requests and modal creation */
 .questboard-hero-card {
   display: grid;
   justify-items: center;
@@ -1513,4 +1513,43 @@ body {
   .request-modal-actions {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* Patch 1.0005: interaction fixes for Guild Request modal and pinned request buttons */
+.questboard-guild-request-button,
+.request-modal-actions button,
+.pinned-embark-button {
+  position: relative;
+  z-index: 5;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.request-modal-panel {
+  pointer-events: auto;
+}
+
+.request-modal-status {
+  min-height: 1.2em;
+  margin-top: 10px;
+  color: #5f3614;
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.request-modal-status[data-tone="success"] {
+  color: #315f28;
+}
+
+.request-modal-status[data-tone="warning"] {
+  color: #76520d;
+}
+
+.request-modal-status[data-tone="error"] {
+  color: #7b2418;
+}
+
+.request-modal-status[data-tone="working"] {
+  color: #5c3c13;
 }

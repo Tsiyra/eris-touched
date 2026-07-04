@@ -21,7 +21,7 @@ import { z } from "zod";
 const PUBLIC_DIR = "public";
 const appHtml = readFileSync(join(PUBLIC_DIR, "app-web.html"), "utf8");
 const APP_URI = "ui://widget/eris-focus.html";
-const ERIS_PATCH_VERSION = "1.0004";
+const ERIS_PATCH_VERSION = "1.0005";
 
 const DATA_DIR = process.env.ERIS_DATA_DIR ?? "data";
 const SAVE_FILE = join(DATA_DIR, "save.json");
