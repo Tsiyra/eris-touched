@@ -1,10 +1,117 @@
 {
-  "currentQuest": null,
-  "questLog": [],
-  "nextQuestId": 1,
-  "pendingNpcChoices": [],
+  "currentQuest": {
+    "id": "quest-4",
+    "task": "Turn in check",
+    "plannedMinutes": 45,
+    "startedAt": "2026-07-04T14:43:19.328Z",
+    "status": "completed",
+    "actualMinutes": 1,
+    "xp": 8,
+    "coins": 10,
+    "rarity": "Common",
+    "loot": "Thread of Focus",
+    "hasItem": true,
+    "rewardSummary": "10 Guild Coins and Common loot: Thread of Focus",
+    "story": "Request completed: Turn in check. For 1 minutes, the hero made a brave turn-in to the guild board. The reward was 10 Guild Coins and Common loot: Thread of Focus. The hero's gathered fortune resonated, increasing the coin reward to 10 Guild Coins."
+  },
+  "pinnedRequests": [],
+  "questLog": [
+    "Story tone changed to Epic Heroic.",
+    "Guild charter updated: Build better habits.",
+    "Story tone changed to Epic Heroic.",
+    "Guild charter updated: Build better habits.",
+    "Request completed: Turn in check. For 1 minutes, the hero made a brave turn-in to the guild board. The reward was 10 Guild Coins and Common loot: Thread of Focus. The hero's gathered fortune resonated, increasing the coin reward to 10 Guild Coins.",
+    "A new request is pulled from the guild questboard: Turn in check. The Eris-Touched hero accepts the posting, not because it is the whole story, but because every completed request strengthens the road toward the Guild Charter: Build better habits.",
+    "A new figure waits at the edge of the story. Choose who enters your journey next.",
+    "Request completed: Wash dishes. For 2 minutes, the hero made a brave turn-in to the guild board. The reward was 20 Guild Coins and Common loot: Dried Herb of Calm. The hero's gathered fortune resonated, increasing the coin reward to 20 Guild Coins.",
+    "A new request is pulled from the guild questboard: Wash dishes. The Eris-Touched hero accepts the posting, not because it is the whole story, but because every completed request strengthens the road toward the Guild Charter: Build better habits.",
+    "Request completed: Read book. For 1 minutes, the hero made a brave turn-in to the guild board. The reward was 10 Guild Coins and Common loot: Pebble of Persistence. The hero's gathered fortune resonated, increasing the coin reward to 10 Guild Coins.",
+    "A new request is pulled from the guild questboard: Read book. The Eris-Touched hero accepts the posting, not because it is the whole story, but because every completed request strengthens the road toward the Guild Charter: Build better habits.",
+    "Request completed: Test quest. For 1 minutes, the hero made a brave turn-in to the guild board. The reward was 10 Guild Coins and Common loot: Copper Token of Beginning."
+  ],
+  "nextQuestId": 5,
+  "pendingNpcChoices": [
+    {
+      "id": "npc-1783176091280-mentor",
+      "name": "Thaleia Threadkeeper 1",
+      "role": "Guild Mentor",
+      "description": "A calm guild archivist who teaches the hero how to turn questboard requests into reliable habit.",
+      "storyHook": "Thaleia offers to help the hero name the next request hidden on the board."
+    },
+    {
+      "id": "npc-1783176091280-rival",
+      "name": "Makar Quickstep 1",
+      "role": "Guild Rival",
+      "description": "A competitive quest runner who treats every board request as a challenge to outdo the guild.",
+      "storyHook": "Makar challenges the hero to prove that steady focus can beat raw speed in the guild ranks."
+    },
+    {
+      "id": "npc-1783176091280-friend",
+      "name": "Ione Lantern-Bearer 1",
+      "role": "Guild Companion",
+      "description": "A warm-hearted guildmate who carries a little lantern said to glow brighter near honest effort.",
+      "storyHook": "Ione offers companionship on days when accepting a guild request feels harder than turning it in."
+    }
+  ],
   "knownNpcs": [],
-  "storyChapters": [],
+  "storyChapters": [
+    {
+      "id": "chapter-1783176200373",
+      "title": "Small Request 4: Turn in check",
+      "questTask": "Turn in check",
+      "minutes": 1,
+      "coins": 10,
+      "rarity": "Common",
+      "loot": "Thread of Focus",
+      "hasItem": true,
+      "rewardSummary": "10 Guild Coins and Common loot: Thread of Focus",
+      "xp": 8,
+      "body": "The guild request was simple: Turn in check. It was only one posting on the board, but it still mattered. Each completed request trains the hero toward the Guild Charter: Build better habits. For 1 minute, the hero turned attention and effort into progress. When the work was done, the board marked it fulfilled, and the guild issued 10 Guild Coins and Common loot: Thread of Focus as a sign of success.  The deed joined the hero's growing legend, another thread in a myth still being written. No companion has joined the road yet, so the victory echoes quietly through the hero's own thoughts.",
+      "createdAt": "2026-07-04T14:43:20.373Z"
+    },
+    {
+      "id": "chapter-1783176091280",
+      "title": "Small Request 3: Wash dishes",
+      "questTask": "Wash dishes",
+      "minutes": 2,
+      "coins": 20,
+      "rarity": "Common",
+      "loot": "Dried Herb of Calm",
+      "hasItem": true,
+      "rewardSummary": "20 Guild Coins and Common loot: Dried Herb of Calm",
+      "xp": 16,
+      "body": "The guild request was simple: Wash dishes. It was only one posting on the board, but it still mattered. Each completed request trains the hero toward the Guild Charter: Build better habits. For 2 minutes, the hero turned attention and effort into progress. When the work was done, the board marked it fulfilled, and the guild issued 20 Guild Coins and Common loot: Dried Herb of Calm as a sign of success.  The deed joined the hero's growing legend, another thread in a myth still being written. No companion has joined the road yet, so the victory echoes quietly through the hero's own thoughts.",
+      "createdAt": "2026-07-04T14:41:31.280Z"
+    },
+    {
+      "id": "chapter-1783175941165",
+      "title": "Small Request 2: Read book",
+      "questTask": "Read book",
+      "minutes": 1,
+      "coins": 10,
+      "rarity": "Common",
+      "loot": "Pebble of Persistence",
+      "hasItem": true,
+      "rewardSummary": "10 Guild Coins and Common loot: Pebble of Persistence",
+      "xp": 8,
+      "body": "The guild request was simple: Read book. It was only one posting on the board, but it still mattered. Each completed request trains the hero toward the Guild Charter: Build better habits. For 1 minute, the hero turned attention and effort into progress. When the work was done, the board marked it fulfilled, and the guild issued 10 Guild Coins and Common loot: Pebble of Persistence as a sign of success.  The deed joined the hero's growing legend, another thread in a myth still being written. No companion has joined the road yet, so the victory echoes quietly through the hero's own thoughts.",
+      "createdAt": "2026-07-04T14:39:01.165Z"
+    },
+    {
+      "id": "chapter-1783175786587",
+      "title": "Small Request 1: Test quest",
+      "questTask": "Test quest",
+      "minutes": 1,
+      "coins": 10,
+      "rarity": "Common",
+      "loot": "Copper Token of Beginning",
+      "hasItem": true,
+      "rewardSummary": "10 Guild Coins and Common loot: Copper Token of Beginning",
+      "xp": 8,
+      "body": "The guild request was simple: Test quest. It was only one posting on the board, but it still mattered. Each completed request trains the hero toward the Guild Charter: Build better habits. For 1 minute, the hero turned attention and effort into progress. When the work was done, the board marked it fulfilled, and the guild issued 10 Guild Coins and Common loot: Copper Token of Beginning as a sign of success.  The deed joined the hero's growing legend, another thread in a myth still being written. No companion has joined the road yet, so the victory echoes quietly through the hero's own thoughts.",
+      "createdAt": "2026-07-04T14:36:26.587Z"
+    }
+  ],
   "appSettings": {
     "storyTone": "epic_heroic",
     "overarchingGoal": "Build better habits"
@@ -22,11 +129,32 @@
   "player": {
     "name": "Eris-Touched Hero",
     "level": 1,
-    "totalXp": 0,
-    "completedQuests": 0,
-    "coins": 0,
-    "inventory": []
+    "totalXp": 40,
+    "completedQuests": 4,
+    "coins": 50,
+    "inventory": [
+      {
+        "name": "Thread of Focus",
+        "rarity": "Common",
+        "goldBonus": 1
+      },
+      {
+        "name": "Dried Herb of Calm",
+        "rarity": "Common",
+        "goldBonus": 1
+      },
+      {
+        "name": "Pebble of Persistence",
+        "rarity": "Common",
+        "goldBonus": 1
+      },
+      {
+        "name": "Copper Token of Beginning",
+        "rarity": "Common",
+        "goldBonus": 1
+      }
+    ]
   },
-  "appVersion": "1.0003",
-  "savedAt": "2026-07-04T13:42:06.763Z"
+  "appVersion": "1.0005",
+  "savedAt": "2026-07-04T14:49:41.596Z"
 }

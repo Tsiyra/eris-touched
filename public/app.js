@@ -126,6 +126,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         });
       });
 
+      const PINNED_REQUESTS_STORAGE_KEY = "eris-touched-pinned-requests-v1";
+
       showScreen("questboard");
 
       let currentQuest = null;
@@ -168,7 +170,6 @@ const ERIS_PATCH_VERSION = "1.0005";
       let localTimerQuestId = null;
       let uploadedPortraitImageData = null;
       let plannedMinutes = 45;
-      const PINNED_REQUESTS_STORAGE_KEY = "eris-touched-pinned-requests-v1";
 
       function createPinnedRequestId() {
         return `pinned-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -859,6 +860,10 @@ const ERIS_PATCH_VERSION = "1.0005";
       function renderActiveQuest() {
         const isActive = currentQuest?.status === "active";
 
+        if (completeButton) {
+          completeButton.disabled = !isActive;
+        }
+
         if (activeQuestEmpty) {
           activeQuestEmpty.style.display = isActive ? "none" : "block";
         }
@@ -1475,7 +1480,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         resumeLocalTimer();
       });
 
-      completeButton.addEventListener("click", async () => {
+      completeButton.addEventListener("click", async (event) => {
+        event.preventDefault();
         const focusedSeconds = getFocusedSeconds();
         const actualMinutes = Math.max(1, Math.round(focusedSeconds / 60));
 
