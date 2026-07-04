@@ -129,7 +129,7 @@ const ERIS_PATCH_VERSION = "1.0005";
       showScreen("questboard");
 
       let currentQuest = null;
-      let pinnedRequests = [];
+      let pinnedRequests = loadPinnedRequests();
       let log = [];
       let pendingNpcChoices = [];
       let knownNpcs = [];
@@ -168,6 +168,46 @@ const ERIS_PATCH_VERSION = "1.0005";
       let localTimerQuestId = null;
       let uploadedPortraitImageData = null;
       let plannedMinutes = 45;
+      const PINNED_REQUESTS_STORAGE_KEY = "eris-touched-pinned-requests-v1";
+
+      function createPinnedRequestId() {
+        return `pinned-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      function loadPinnedRequests() {
+        try {
+          const raw = localStorage.getItem(PINNED_REQUESTS_STORAGE_KEY);
+          if (!raw) return [];
+
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return [];
+
+          return parsed
+            .map((request) => ({
+              id: request?.id || createPinnedRequestId(),
+              task: String(request?.task || "").trim(),
+              plannedMinutes: Math.max(
+                1,
+                Math.min(600, Math.round(Number(request?.plannedMinutes) || 45))
+              ),
+            }))
+            .filter((request) => request.task);
+        } catch (error) {
+          console.error("Could not load pinned requests:", error);
+          return [];
+        }
+      }
+
+      function savePinnedRequests() {
+        try {
+          localStorage.setItem(
+            PINNED_REQUESTS_STORAGE_KEY,
+            JSON.stringify(pinnedRequests)
+          );
+        } catch (error) {
+          console.error("Could not save pinned requests:", error);
+        }
+      }
 
       const LEVEL_THRESHOLDS = {
         1: 0,
@@ -762,7 +802,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         embarkButton.className = "primary loading-button pinned-embark-button";
         embarkButton.textContent = "Embark";
         embarkButton.disabled = currentQuest?.status === "active";
-        embarkButton.addEventListener("click", async () => {
+        embarkButton.addEventListener("click", async (event) => {
+          event.preventDefault();
           embarkButton.disabled = true;
           embarkButton.classList.add("is-loading");
           embarkButton.textContent = "Embarking...";
@@ -770,9 +811,12 @@ const ERIS_PATCH_VERSION = "1.0005";
 
           try {
             setRequestModalStatus("");
-            await callTool("embark_focus_quest", { requestId: request.id });
+            await callTool("start_focus_quest", {
+              task: request.task,
+              plannedMinutes: request.plannedMinutes ?? 45,
+            });
           } catch (error) {
-            console.error("Pinned request embark failed:", error);
+            console.error("Pinned request embark failed:", error?.message || error, error);
             reportToolError(error);
             embarkButton.disabled = false;
           } finally {
@@ -946,7 +990,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         setPlannedMinuteButtonsDisabled(isDisabled);
       }
 
-      async function pinRequestFromModal() {
+      async function pinRequestFromModal(event) {
+        event?.preventDefault?.();
         const task = getRequestModalTask();
 
         if (!task) {
@@ -961,14 +1006,20 @@ const ERIS_PATCH_VERSION = "1.0005";
         setRequestModalStatus("Pinning request to the board...", "working");
 
         try {
-          await callTool("pin_focus_quest", {
-            task,
-            plannedMinutes,
-          });
+          pinnedRequests = [
+            {
+              id: createPinnedRequestId(),
+              task,
+              plannedMinutes,
+            },
+            ...pinnedRequests,
+          ];
+          savePinnedRequests();
+          renderPinnedRequests();
           setRequestModalStatus("Pinned to the request board.", "success");
           closeRequestModal();
         } catch (error) {
-          console.error("Pin request failed:", error);
+          console.error("Pin request failed:", error?.message || error, error);
           setRequestModalStatus(error.message || "Pin request failed.", "error");
           reportToolError(error);
         } finally {
@@ -978,7 +1029,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         }
       }
 
-      async function embarkRequestFromModal() {
+      async function embarkRequestFromModal(event) {
+        event?.preventDefault?.();
         const task = getRequestModalTask();
 
         if (!task) {
@@ -994,14 +1046,14 @@ const ERIS_PATCH_VERSION = "1.0005";
         setRequestModalStatus("Starting the expedition...", "working");
 
         try {
-          await callTool("embark_focus_quest", {
+          await callTool("start_focus_quest", {
             task,
             plannedMinutes,
           });
           setRequestModalStatus("Expedition started.", "success");
           closeRequestModal();
         } catch (error) {
-          console.error("Embark request failed:", error);
+          console.error("Embark request failed:", error?.message || error, error);
           setRequestModalStatus(error.message || "Embark failed.", "error");
           reportToolError(error);
         } finally {
@@ -1048,10 +1100,6 @@ const ERIS_PATCH_VERSION = "1.0005";
 
         if (data?.quest !== undefined) {
           currentQuest = data.quest;
-        }
-
-        if (Array.isArray(data?.pinnedRequests)) {
-          pinnedRequests = data.pinnedRequests;
         }
 
         if (Array.isArray(data?.log)) {
@@ -1140,8 +1188,9 @@ const ERIS_PATCH_VERSION = "1.0005";
       }
 
       function reportToolError(error) {
-        console.error("Tool call failed:", error);
-        alert("That action could not be completed. Please try again.");
+        const message = error?.message || "Unknown error.";
+        console.error("Tool call failed:", message, error);
+        alert(`That action could not be completed. Please try again.\n${message}`);
       }
 
       function getToolText(response) {
@@ -1205,11 +1254,13 @@ const ERIS_PATCH_VERSION = "1.0005";
         }
       }
 
-      generatePromptButton.addEventListener("click", async () => {
+      generatePromptButton.addEventListener("click", async (event) => {
+        event.preventDefault();
         await saveCharacterFromForm(generatePromptButton, "Generating...");
       });
 
-      copyPortraitPromptButton.addEventListener("click", async () => {
+      copyPortraitPromptButton.addEventListener("click", async (event) => {
+        event.preventDefault();
         const promptText = portraitPrompt.textContent.trim();
 
         if (!promptText) {
@@ -1234,7 +1285,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         openSettingsModal();
       });
 
-      closeSettingsButton.addEventListener("click", () => {
+      closeSettingsButton.addEventListener("click", (event) => {
+        event.preventDefault();
         closeSettingsModal();
       });
 
@@ -1242,7 +1294,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         openRequestModal();
       });
 
-      closeRequestButton?.addEventListener("click", () => {
+      closeRequestButton?.addEventListener("click", (event) => {
+        event.preventDefault();
         closeRequestModal();
       });
 
@@ -1254,11 +1307,13 @@ const ERIS_PATCH_VERSION = "1.0005";
         openPortraitModal();
       });
 
-      closePortraitButton.addEventListener("click", () => {
+      closePortraitButton.addEventListener("click", (event) => {
+        event.preventDefault();
         closePortraitModal();
       });
 
-      saveImageButton.addEventListener("click", () => {
+      saveImageButton.addEventListener("click", (event) => {
+        event.preventDefault();
         if (!character.portraitImageUrl) {
           alert("There is no image to save.");
           return;
@@ -1274,7 +1329,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         document.body.removeChild(link);
       });
 
-      generateImageButton.addEventListener("click", async () => {
+      generateImageButton.addEventListener("click", async (event) => {
+        event.preventDefault();
         const saved = await saveCharacterFromForm(
           generateImageButton,
           "Preparing Prompt..."
@@ -1308,7 +1364,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         }
       });
 
-      saveCharacterButton.addEventListener("click", async () => {
+      saveCharacterButton.addEventListener("click", async (event) => {
+        event.preventDefault();
         const name = characterNameInput.value.trim();
         const description = characterDescriptionInput.value.trim();
 
@@ -1368,7 +1425,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         }
       });
 
-      clearPortraitImageButton.addEventListener("click", () => {
+      clearPortraitImageButton.addEventListener("click", (event) => {
+        event.preventDefault();
         uploadedPortraitImageData = "";
         portraitImageUploadInput.value = "";
         setPortraitImageSource("");
@@ -1383,7 +1441,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         portraitUploadStatus.textContent = "Portrait will be removed when saved.";
       });
 
-      saveSettingsButton.addEventListener("click", async () => {
+      saveSettingsButton.addEventListener("click", async (event) => {
+        event.preventDefault();
         saveSettingsButton.disabled = true;
         saveSettingsButton.textContent = "Saving...";
 
@@ -1400,12 +1459,12 @@ const ERIS_PATCH_VERSION = "1.0005";
         }
       });
 
-      startButton?.addEventListener("click", () => {
-        pinRequestFromModal();
+      startButton?.addEventListener("click", (event) => {
+        pinRequestFromModal(event);
       });
 
-      embarkNowButton?.addEventListener("click", () => {
-        embarkRequestFromModal();
+      embarkNowButton?.addEventListener("click", (event) => {
+        embarkRequestFromModal(event);
       });
 
       pauseButton.addEventListener("click", () => {

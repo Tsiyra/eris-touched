@@ -160,7 +160,7 @@
 
       <div id="settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-panel">
-          <button id="close-settings-button" class="modal-close-button">✕</button>
+          <button id="close-settings-button" class="modal-close-button" type="button">✕</button>
           <h2 class="page-title-secondary">Guild & Character Settings</h2>
 
           <div class="modal-section">
@@ -233,10 +233,10 @@
               <div id="portrait-prompt" hidden>
                 A fantasy portrait of an Eris-Touched hero.
               </div>
-              <button class="secondary" id="generate-prompt-button">
+              <button class="secondary" id="generate-prompt-button" type="button">
                 Refresh Saved Prompt
               </button>
-              <button class="secondary" id="copy-portrait-prompt-button">
+              <button class="secondary" id="copy-portrait-prompt-button" type="button">
                 Copy Saved Prompt
               </button>
             </div>
@@ -244,7 +244,7 @@
             <label for="outfit-name">Outfit name</label>
             <input id="outfit-name" placeholder="Hero Starter Outfit" />
 
-            <button class="primary" id="save-character-button">Save Character</button>
+            <button class="primary" id="save-character-button" type="button">Save Character</button>
           </div>
 
           <div class="modal-section">
@@ -261,14 +261,14 @@
               <option value="dark_mythic">Dark Mythic</option>
             </select>
 
-            <button class="primary" id="save-settings-button">Save Guild Charter</button>
+            <button class="primary" id="save-settings-button" type="button">Save Guild Charter</button>
           </div>
         </div>
       </div>
 
       <div id="request-modal" class="modal-overlay" style="display: none;">
         <div class="modal-panel request-modal-panel">
-          <button id="close-request-button" class="modal-close-button">✕</button>
+          <button id="close-request-button" class="modal-close-button" type="button">✕</button>
           <h2 class="page-title-secondary">Create Guild Request</h2>
 
           <div class="modal-section request-modal-section">
@@ -299,7 +299,7 @@
 
       <div id="portrait-modal" class="modal-overlay" style="display: none;">
         <div class="modal-panel portrait-modal-panel">
-          <button id="close-portrait-button" class="modal-close-button">✕</button>
+          <button id="close-portrait-button" class="modal-close-button" type="button">✕</button>
           <div class="portrait-modal-content">
             <div class="portrait-modal-image-shell">
               <img id="portrait-modal-image" class="portrait-modal-image" alt="Full portrait" />
@@ -312,8 +312,8 @@
               <div id="portrait-modal-level" class="portrait-modal-subtext">Level 1</div>
               <div class="portrait-modal-outfit-pill">COMMON · <span id="portrait-modal-outfit">Hero Starter Outfit</span></div>
               <div class="portrait-modal-actions">
-                <button id="save-image-button" class="secondary">Save Image</button>
-                <button id="generate-image-button" class="primary loading-button">Copy Image Prompt</button>
+                <button id="save-image-button" class="secondary" type="button">Save Image</button>
+                <button id="generate-image-button" class="primary loading-button" type="button">Copy Image Prompt</button>
               </div>
               <div id="portrait-generation-status" class="portrait-modal-subtext" aria-live="polite"></div>
             </div>
