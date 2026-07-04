@@ -8,7 +8,7 @@ import {
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PATCH_VERSION = "1.0002";
+const PATCH_VERSION = "1.0003";
 const patchRoot = dirname(fileURLToPath(import.meta.url));
 const projectRoot = process.cwd();
 const backupRoot = join(projectRoot, "patch-backups", PATCH_VERSION);
@@ -19,12 +19,16 @@ const files = [
     target: join(projectRoot, "server.js"),
   },
   {
+    source: join(patchRoot, "patch-files", "public", "app-web.html"),
+    target: join(projectRoot, "public", "app-web.html"),
+  },
+  {
     source: join(patchRoot, "patch-files", "public", "app.js"),
     target: join(projectRoot, "public", "app.js"),
   },
   {
-    source: join(patchRoot, "patch-files", "public", "app-web.html"),
-    target: join(projectRoot, "public", "app-web.html"),
+    source: join(patchRoot, "patch-files", "public", "styles.css"),
+    target: join(projectRoot, "public", "styles.css"),
   },
 ];
 
@@ -60,8 +64,9 @@ console.log(`Applying Eris-Touched patch ${PATCH_VERSION}...`);
 console.log(`Project root: ${projectRoot}`);
 
 requireFile(join(projectRoot, "server.js"), "server.js");
-requireFile(join(projectRoot, "public", "app.js"), "public/app.js");
 requireFile(join(projectRoot, "public", "app-web.html"), "public/app-web.html");
+requireFile(join(projectRoot, "public", "app.js"), "public/app.js");
+requireFile(join(projectRoot, "public", "styles.css"), "public/styles.css");
 ensureDir(backupRoot);
 
 for (const file of files) {
@@ -70,11 +75,9 @@ for (const file of files) {
 }
 
 console.log("");
-console.log("Patch 1.0002 complete.");
+console.log("Patch 1.0003 complete.");
 console.log("Backups saved to:");
 console.log(backupRoot);
 console.log("");
-console.log("Text generation now defaults to Ollama.");
-console.log("Image generation now defaults to manual prompt copy mode.");
-console.log("Gemini AI Studio image mode is reserved for a future patch.");
+console.log("Questboard has been redesigned with a top-center portrait image, pinned request card, time presets, and guild charter card.");
 console.log("Restart your Node server after applying this patch.");
