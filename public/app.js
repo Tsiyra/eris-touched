@@ -30,6 +30,10 @@ const ERIS_PATCH_VERSION = "1.0005";
       const questboardPortraitInitials = document.querySelector("#questboard-portrait-initials");
       const questboardPortraitName = document.querySelector("#questboard-portrait-name");
       const questboardOutfitName = document.querySelector("#questboard-outfit-name");
+      const questboardLevelBadge = document.querySelector("#questboard-level-badge");
+      const questboardLevelFill = document.querySelector("#questboard-level-fill");
+      const questboardLevelLabel = document.querySelector("#questboard-level-label");
+      const questboardGoldTotal = document.querySelector("#questboard-gold-total");
       const heroPortraitShell = document.querySelector("#hero-portrait-shell");
       const heroPortraitImage = document.querySelector("#hero-portrait-image");
       const heroPortraitPlaceholder = document.querySelector("#hero-portrait-placeholder");
@@ -1579,7 +1583,7 @@ const ERIS_PATCH_VERSION = "1.0005";
       function renderCharacter() {
         portraitPrompt.textContent = character.portraitPrompt;
         questboardPortraitName.textContent = character.name;
-        questboardOutfitName.textContent = character.outfitName || "Hero Starter Outfit";
+        questboardOutfitName.textContent = "Eris-Touched Hero";
         heroPortraitName.textContent = character.name;
         heroOutfitName.textContent = character.outfitName || "Hero Starter Outfit";
         portraitModalName.textContent = character.name;
@@ -1629,6 +1633,38 @@ const ERIS_PATCH_VERSION = "1.0005";
         }
       }
 
+      function renderQuestboardHeroStatus() {
+        if (questboardLevelBadge) {
+          questboardLevelBadge.textContent = `Lv ${player.level}`;
+        }
+
+        if (questboardGoldTotal) {
+          questboardGoldTotal.textContent = player.coins ?? 0;
+        }
+
+        if (!questboardLevelFill || !questboardLevelLabel) return;
+
+        const currentLevelXp = LEVEL_THRESHOLDS[player.level] ?? 0;
+        const nextLevelXp = LEVEL_THRESHOLDS[player.level + 1];
+
+        if (!nextLevelXp) {
+          questboardLevelFill.style.width = "100%";
+          questboardLevelLabel.textContent = "Max level reached";
+          return;
+        }
+
+        const earnedThisLevel = player.totalXp - currentLevelXp;
+        const neededThisLevel = nextLevelXp - currentLevelXp;
+        const percent = Math.max(
+          0,
+          Math.min(100, Math.round((earnedThisLevel / neededThisLevel) * 100))
+        );
+
+        questboardLevelFill.style.width = `${percent}%`;
+        questboardLevelLabel.textContent =
+          `${player.totalXp} / ${nextLevelXp} XP to Level ${player.level + 1}`;
+      }
+
       function renderHero() {
         heroLevel.textContent = player.level;
         heroXp.textContent = player.totalXp;
@@ -1654,6 +1690,8 @@ const ERIS_PATCH_VERSION = "1.0005";
           levelLabel.textContent =
             `${player.totalXp} / ${nextLevelXp} XP to Level ${player.level + 1}`;
         }
+
+        renderQuestboardHeroStatus();
       }
 
       function renderInventory() {

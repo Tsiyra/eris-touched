@@ -16,28 +16,46 @@
       </p>
 
       <section id="screen-questboard" class="app-screen active-screen questboard-screen">
+        <section class="questboard-hero-status-bar" aria-label="Questboard hero status">
+          <div class="hero-portrait-shell questboard-status-portrait" id="questboard-portrait-shell">
+            <div class="hero-portrait-content">
+              <img id="questboard-portrait-image" class="hero-portrait-image" alt="Character portrait" />
+              <div id="questboard-portrait-placeholder" class="hero-portrait-placeholder questboard-status-placeholder">
+                <div id="questboard-portrait-initials" class="hero-portrait-initials"></div>
+                <div class="hero-portrait-label">Add a portrait in settings</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="questboard-status-main">
+            <div class="questboard-status-heading">
+              <div class="questboard-status-copy">
+                <div id="questboard-portrait-name" class="questboard-status-name">Eris-Touched Hero</div>
+                <div id="questboard-outfit-name" class="questboard-status-subtitle">Eris-Touched Hero</div>
+              </div>
+              <div id="questboard-level-badge" class="questboard-level-badge">Lv 1</div>
+            </div>
+
+            <div class="questboard-status-progress">
+              <div class="questboard-status-track">
+                <div id="questboard-level-fill" class="questboard-status-fill"></div>
+              </div>
+              <div id="questboard-level-label" class="questboard-status-label">0 / 90 XP to Level 2</div>
+            </div>
+          </div>
+
+          <div class="questboard-status-gold">
+            <div class="questboard-status-stat-label">Gold</div>
+            <div id="questboard-gold-total" class="questboard-status-stat-value">0</div>
+          </div>
+        </section>
+
         <div class="screen-header questboard-title-plate">
           <div class="page-title">Questboard</div>
           <div class="screen-subtitle">
             Pin requests first, then embark when you are ready to focus.
           </div>
         </div>
-
-        <section class="questboard-hero-card" aria-label="Questboard portrait">
-          <div class="hero-portrait-shell questboard-portrait-ring" id="questboard-portrait-shell">
-            <div class="hero-portrait-content">
-              <img id="questboard-portrait-image" class="hero-portrait-image" alt="Character portrait" />
-              <div id="questboard-portrait-placeholder" class="hero-portrait-placeholder questboard-feature-placeholder">
-                <div id="questboard-portrait-initials" class="hero-portrait-initials"></div>
-                <div class="hero-portrait-label">Add a portrait in settings</div>
-              </div>
-            </div>
-          </div>
-          <div class="questboard-feature-nameplate">
-            <div id="questboard-portrait-name" class="portrait-name">Eris-Touched Hero</div>
-            <div id="questboard-outfit-name" class="portrait-description">Hero Starter Outfit</div>
-          </div>
-        </section>
 
         <button id="open-request-modal-button" class="primary questboard-guild-request-button" type="button" aria-haspopup="dialog">
           Guild Request
