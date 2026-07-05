@@ -329,6 +329,26 @@ body {
         margin-top: 14px;
       }
 
+      .hero-profile-heading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .hero-edit-button {
+        margin: 0;
+        padding: 6px 8px;
+        border-radius: 999px;
+        background: rgba(107, 64, 24, 0.16);
+        color: #5b3415;
+        border: 1px solid rgba(105, 64, 24, 0.24);
+      }
+
+      .hero-edit-button:hover {
+        background: rgba(107, 64, 24, 0.24);
+      }
+
       .questboard-profile-panel .hero-profile-meta {
         margin-top: 0;
         text-align: left;
@@ -422,6 +442,13 @@ body {
         display: grid;
         place-items: center;
         border: 8px double rgba(235, 188, 93, 0.8);
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .portrait-modal-image-shell.is-dragging {
+        cursor: grabbing;
       }
 
       .portrait-modal-image {
@@ -429,6 +456,7 @@ body {
         height: 100%;
         object-fit: cover;
         display: none;
+        will-change: transform, object-position;
       }
 
       .portrait-modal-placeholder {
@@ -479,10 +507,86 @@ body {
         flex-wrap: wrap;
         gap: 10px;
         margin-top: 18px;
+        align-items: flex-start;
       }
 
       .portrait-modal-actions button {
         min-width: 140px;
+      }
+
+      .portrait-modal-actions .icon-only-button {
+        min-width: 46px;
+        width: 46px;
+        height: 42px;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+        font-size: 1.35rem;
+        line-height: 1;
+      }
+
+      .portrait-upload-menu {
+        position: relative;
+      }
+
+      .portrait-upload-menu > summary {
+        list-style: none;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .portrait-upload-menu > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .portrait-upload-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 30;
+        width: min(320px, calc(100vw - 56px));
+        padding: 12px;
+        border-radius: 12px;
+        background:
+          linear-gradient(135deg, rgba(255, 251, 227, 0.98), rgba(213, 177, 119, 0.98)),
+          #e8d2a7;
+        border: 1px solid rgba(105, 64, 24, 0.68);
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.38);
+        color: #2a180c;
+      }
+
+      .portrait-upload-panel label {
+        display: block;
+        margin-top: 8px;
+        color: #3a200c;
+        font-weight: 900;
+        font-size: 0.82rem;
+      }
+
+      .portrait-upload-panel input[type="file"],
+      .portrait-upload-panel input[type="range"] {
+        width: 100%;
+      }
+
+      .portrait-drag-help {
+        margin: 10px 0 0;
+        color: #5a3617;
+        font-size: 0.84rem;
+        line-height: 1.35;
+      }
+
+      .portrait-zoom-actions {
+        display: grid;
+        grid-template-columns: 46px minmax(60px, 1fr) 46px;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      #portrait-zoom-label {
+        color: #3a200c;
+        font-weight: 950;
+        text-align: center;
       }
 
       .portrait-name {
@@ -769,7 +873,7 @@ body {
           linear-gradient(180deg, rgba(48, 31, 17, 0.96), rgba(16, 12, 9, 0.98));
         border: 1px solid rgba(207, 153, 74, 0.45);
         border-top-color: rgba(246, 205, 119, 0.28);
-        z-index: 10;
+        z-index: 90;
         box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.42);
       }
 
@@ -1141,43 +1245,16 @@ body {
   background: rgba(255, 241, 203, 0.5);
 }
 
-.questboard-estimate-row {
+.questboard-size-row {
   margin-top: 13px;
 }
 
-.questboard-estimate-label {
+.questboard-size-label {
   font-size: 0.78rem;
   font-weight: 950;
   color: #5b3212;
 }
 
-.questboard-time-presets {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 7px;
-  margin-top: 7px;
-}
-
-.questboard-time-button {
-  margin: 0;
-  padding: 9px 6px;
-  border-radius: 7px;
-  border: 1px solid rgba(99, 55, 18, 0.38);
-  background: linear-gradient(180deg, rgba(236, 211, 161, 0.9), rgba(185, 139, 75, 0.88));
-  color: #331b08;
-  font-size: 0.77rem;
-  text-transform: uppercase;
-  box-shadow: inset 0 1px 0 rgba(255, 249, 225, 0.5);
-}
-
-.questboard-time-button.active {
-  color: #ffe5ad;
-  background: linear-gradient(180deg, #9c6328, #563013);
-  border-color: rgba(255, 215, 133, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 232, 169, 0.2),
-    0 0 0 1px rgba(78, 40, 12, 0.62);
-}
 
 .questboard-add-card .timer {
   margin: 13px 0 8px;
@@ -1407,6 +1484,81 @@ body {
   box-shadow: inset 0 0 18px rgba(96, 55, 17, 0.09);
 }
 
+.pinned-request-title-row,
+.questboard-active-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.questboard-active-title-actions,
+.questboard-active-original-task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.questboard-action-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.questboard-action-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.questboard-action-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.questboard-action-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 25;
+  min-width: 170px;
+  padding: 6px;
+  display: grid;
+  gap: 5px;
+  border-radius: 10px;
+  background: rgba(255, 246, 214, 0.98);
+  border: 1px solid rgba(90, 50, 16, 0.34);
+  box-shadow: 0 14px 28px rgba(42, 23, 8, 0.28);
+}
+
+.questboard-menu-action {
+  width: 100%;
+  min-height: 34px;
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.questboard-menu-action.danger {
+  color: #6f1d12;
+  background: rgba(143, 46, 26, 0.12);
+  border-color: rgba(111, 29, 18, 0.28);
+}
+
+.questboard-active-original-task-row {
+  justify-content: flex-start;
+  margin-top: 4px;
+}
+
+.questboard-cancel-request-button {
+  color: #6f1d12;
+  background: rgba(143, 46, 26, 0.12);
+  border-color: rgba(111, 29, 18, 0.28);
+  font-size: 1.1rem;
+  font-weight: 950;
+}
+
 .pinned-request-title,
 .questboard-active-title {
   color: #2c1808;
@@ -1415,12 +1567,108 @@ body {
   font-weight: 950;
 }
 
-.pinned-request-description,
-.questboard-active-meta {
+.questboard-icon-button {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(90, 55, 17, 0.12);
+  border: 1px solid rgba(90, 55, 17, 0.2);
+  color: #5b3615;
+  flex: 0 0 auto;
+}
+
+.questboard-icon-button:disabled {
+  opacity: 0.55;
+}
+
+.pinned-request-description {
   margin-top: 5px;
   color: #5f3614;
   line-height: 1.35;
   font-size: 0.9rem;
+}
+
+.questboard-current-request-card {
+  border-color: rgba(143, 83, 24, 0.62);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.24),
+    inset 0 0 22px rgba(153, 91, 26, 0.14);
+}
+
+.request-card-progress {
+  margin-top: 10px;
+}
+
+.questboard-request-task-details {
+  margin-top: 10px;
+}
+
+.questboard-request-task-details > summary {
+  cursor: pointer;
+  color: #3a1d09;
+  font-weight: 950;
+  list-style-position: inside;
+}
+
+.questboard-request-task-details[open] > summary {
+  margin-bottom: 8px;
+}
+
+.pinned-request-task-list .questboard-step-item {
+  opacity: 0.88;
+}
+
+.questboard-active-original-task {
+  color: #6f421b;
+  font-size: 0.94rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.questboard-active-reward-estimate {
+  width: min(760px, 100%);
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(67, 38, 13, 0.08);
+  border: 1px solid rgba(86, 48, 16, 0.18);
+  color: #321908;
+  font-weight: 850;
+  font-size: 0.88rem;
+}
+
+.questboard-request-progress {
+  width: min(760px, 100%);
+  margin-top: 12px;
+}
+
+.questboard-request-progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  color: #4d2b0f;
+}
+
+.questboard-request-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(71, 43, 18, 0.32);
+  border: 1px solid rgba(55, 30, 9, 0.25);
+}
+
+.questboard-request-progress-bar > div {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #496c32, #d6af63);
+  transition: width 0.28s ease;
 }
 
 .pinned-request-meta {
@@ -1458,6 +1706,51 @@ body {
   margin: 0;
 }
 
+.questboard-step-content {
+  min-width: 0;
+}
+
+.questboard-step-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.questboard-step-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.questboard-step-icon-button {
+  margin: 0;
+}
+
+.questboard-step-checkmark-button {
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.questboard-step-extra {
+  margin-top: 4px;
+}
+
+.questboard-step-item.is-done .questboard-step-title {
+  text-decoration: line-through;
+}
+
+.questboard-active-card {
+  display: none;
+  margin-top: 16px;
+}
+
+.questboard-active-card.is-visible {
+  display: block;
+}
+
 .questboard-active-card .timer {
   margin: 13px 0 8px;
   padding: 8px 0;
@@ -1467,7 +1760,7 @@ body {
 }
 
 .questboard-active-actions {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
       .questboard-active-actions #complete-button {
@@ -1478,7 +1771,6 @@ body {
         overflow: hidden;
       }
 
-      body.focus-session-active .bottom-nav,
       body.focus-session-active .gear-button {
         opacity: 0;
         pointer-events: none;
@@ -1508,6 +1800,40 @@ body {
           0 36px 90px rgba(0, 0, 0, 0.76);
       }
 
+.questboard-active-card.focus-session-active #active-quest-details {
+  width: min(860px, 100%);
+  padding: clamp(18px, 3vw, 30px);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 238, 185, 0.1), rgba(45, 27, 14, 0.64)),
+    rgba(22, 14, 10, 0.9);
+  border: 1px solid rgba(255, 224, 160, 0.2);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+}
+
+.questboard-active-card.focus-session-active .questboard-active-title-row {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.questboard-active-card.focus-session-active .questboard-active-original-task {
+  color: #d8c08c;
+  font-size: clamp(0.98rem, 2vw, 1.08rem);
+}
+
+.questboard-active-card.focus-session-active .questboard-active-reward-estimate {
+  color: #ffe8b0;
+  background: rgba(255, 224, 160, 0.1);
+  border-color: rgba(255, 224, 160, 0.2);
+}
+
+.questboard-active-card.focus-session-active .questboard-request-progress,
+.questboard-active-card.focus-session-active .questboard-active-reward-estimate,
+.questboard-active-card.focus-session-active #quest-step-list,
+.questboard-active-card.focus-session-active .questboard-active-title-actions {
+  display: none;
+}
+
       .questboard-active-card.focus-session-active .page-title-secondary {
         color: #ffe39d;
         font-size: clamp(1.45rem, 3.4vw, 2.35rem);
@@ -1523,13 +1849,6 @@ body {
         font-size: clamp(1.8rem, 4.5vw, 3.15rem);
         line-height: 1.05;
         text-shadow: 0 2px 0 rgba(39, 20, 9, 0.72), 0 0 22px rgba(255, 214, 134, 0.16);
-      }
-
-      .questboard-active-card.focus-session-active .questboard-active-meta {
-        margin-top: 12px;
-        color: #e8cf92;
-        font-size: 1rem;
-        line-height: 1.45;
       }
 
       .questboard-active-card.focus-session-active .timer {
@@ -1568,18 +1887,84 @@ body {
         gap: 12px;
       }
 
-      .questboard-active-card.focus-session-active .questboard-active-actions button {
-        min-height: 56px;
-        font-size: 0.98rem;
-      }
-
-      .request-modal-panel {
-        width: min(520px, 100%);
-      }
-
-.request-modal-section .questboard-time-presets {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.questboard-active-card.focus-session-active .questboard-active-actions button {
+  min-height: 56px;
+  font-size: 0.98rem;
 }
+
+.questboard-size-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.questboard-size-button {
+  margin: 0;
+  min-height: 44px;
+  background: rgba(255, 244, 215, 0.58);
+  color: #5c3716;
+  border: 1px solid rgba(105, 64, 24, 0.38);
+}
+
+.questboard-size-button.active {
+  background:
+    linear-gradient(180deg, rgba(255, 239, 172, 0.95), rgba(186, 116, 28, 0.98)),
+    #d29136;
+  color: #2a1504;
+  border-color: #f6d27a;
+}
+
+.questboard-step-list {
+  display: grid;
+  gap: 10px;
+  width: min(760px, 100%);
+  margin-top: 12px;
+}
+
+.questboard-step-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-left: clamp(12px, 4vw, 34px);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 248, 228, 0.08);
+  border: 1px solid rgba(255, 224, 160, 0.16);
+  color: #f8e8c1;
+  text-align: left;
+}
+
+.questboard-step-item.is-active {
+  border-color: rgba(255, 218, 139, 0.46);
+  box-shadow: 0 0 0 1px rgba(255, 218, 139, 0.12);
+}
+
+.questboard-step-item.is-done {
+  opacity: 0.76;
+}
+
+.questboard-step-item input {
+  width: 18px;
+  height: 18px;
+  margin-top: 4px;
+}
+
+.questboard-step-title {
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.questboard-step-details {
+  grid-column: auto;
+  color: #d8c08c;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.request-modal-panel {
+  width: min(520px, 100%);
+}
+
 
 .request-modal-actions {
   display: grid;
@@ -1617,8 +2002,7 @@ body {
 
 /* Patch 1.0005: interaction fixes for Guild Request modal and pinned request buttons */
 .questboard-guild-request-button,
-.request-modal-actions button,
-.pinned-embark-button {
+.request-modal-actions button {
   position: relative;
   z-index: 5;
   pointer-events: auto;
@@ -1651,4 +2035,100 @@ body {
 
 .request-modal-status[data-tone="working"] {
   color: #5c3c13;
+}
+
+
+.questboard-step-item .questboard-step-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.questboard-step-item .questboard-step-actions button {
+  margin: 0;
+  min-height: 38px;
+}
+
+
+.questboard-active-card:not(.focus-session-active) .timer,
+.questboard-active-card:not(.focus-session-active) #timer-status,
+.questboard-active-card:not(.focus-session-active) #pause-button,
+.questboard-active-card:not(.focus-session-active) #hold-timer-button,
+.questboard-active-card:not(.focus-session-active) #cancel-timer-button {
+  display: none;
+}
+
+
+.questboard-active-card:not(.focus-session-active) .questboard-request-progress-row {
+  align-items: center;
+}
+
+.questboard-active-card:not(.focus-session-active) #quest-request-progress-label {
+  color: #3a1d09;
+  font-size: 0.9rem;
+}
+
+.questboard-active-card:not(.focus-session-active) .questboard-active-actions {
+  grid-template-columns: 1fr;
+  margin-top: 12px;
+}
+
+.questboard-step-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.questboard-step-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.questboard-step-title {
+  color: #321908;
+}
+
+.questboard-step-embark-button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.74rem;
+  margin: 0;
+}
+
+.questboard-step-checkmark-button,
+.questboard-step-icon-button {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+}
+
+.questboard-step-checkmark-button {
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.questboard-step-item .questboard-step-actions {
+  display: none;
+}
+
+
+.questboard-step-embark-button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+
+.pinned-request-meta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }

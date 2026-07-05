@@ -43,37 +43,56 @@
           Guild Request
         </button>
 
-        <section class="panel questboard-pinned-list-card">
-          <div class="questboard-list-header">
-            <h2 class="page-title-secondary">Pinned Requests</h2>
-            <span id="pinned-request-count" class="questboard-count-pill">0</span>
+      <section class="panel questboard-active-card" aria-label="Focus timer">
+        <div id="active-quest-empty" class="empty">
+          No active request. Embark from a pinned request when you are ready.
+        </div>
+        <div id="active-quest-details" style="display: none;">
+          <div class="questboard-active-title-row">
+            <div>
+              <div id="active-quest-title" class="questboard-active-title">No active request</div>
+              <div class="questboard-active-original-task-row">
+                <div id="active-quest-original-task" class="questboard-active-original-task"></div>
+              </div>
+            </div>
+            <details class="questboard-action-menu questboard-active-title-actions">
+              <summary class="questboard-icon-button" title="Request actions" aria-label="Request actions">...</summary>
+              <div class="questboard-action-menu-panel">
+                <button id="edit-active-request-button" class="questboard-menu-action" type="button">Edit fantasy name</button>
+                <button id="edit-active-task-button" class="questboard-menu-action" type="button">Edit true request name</button>
+                <button id="cancel-active-request-button" class="questboard-menu-action danger" type="button">Cancel request</button>
+              </div>
+            </details>
           </div>
-          <div id="pinned-request-list" class="pinned-request-list empty">
-            No pinned requests yet. Use Guild Request to create one.
+          <div class="questboard-request-progress">
+            <div class="questboard-request-progress-row">
+              <span>Request Progress</span>
+              <strong id="quest-request-progress-label">0 / 0 Checkmarks</strong>
+            </div>
+            <div class="questboard-request-progress-bar">
+              <div id="quest-request-progress-fill"></div>
+            </div>
           </div>
-        </section>
+          <div id="active-quest-reward-estimate" class="questboard-active-reward-estimate"></div>
+          <div id="quest-step-list" class="questboard-step-list"></div>
+        </div>
 
-        <section class="panel questboard-active-card">
-          <h2 class="page-title-secondary">Active Expedition</h2>
-          <div id="active-quest-empty" class="empty">
-            No active request. Embark from a pinned request when you are ready.
-          </div>
-          <div id="active-quest-details" style="display: none;">
-            <div id="active-quest-title" class="questboard-active-title">No active request</div>
-            <div id="active-quest-meta" class="questboard-active-meta"></div>
-          </div>
+        <div class="timer">
+          <div id="timer">00:00:00</div>
+        </div>
+        <div id="timer-status" class="status">No request started.</div>
 
-          <div class="timer">
-            <div id="timer">00:00:00</div>
-          </div>
-          <div id="timer-status" class="status">No request started.</div>
+        <div class="questboard-action-grid questboard-active-actions">
+          <button class="secondary" id="pause-button" type="button" title="Play timer" aria-label="Play timer" disabled>&#9654;</button>
+          <button class="secondary" id="hold-timer-button" type="button" disabled>Hold</button>
+          <button class="secondary" id="cancel-timer-button" type="button" disabled>Cancel</button>
+          <button class="danger loading-button" id="complete-button" type="button" disabled>Turn In Request</button>
+        </div>
+      </section>
 
-          <div class="questboard-action-grid questboard-active-actions">
-            <button class="secondary" id="pause-button" disabled>Pause</button>
-            <button class="secondary" id="resume-button" disabled>Resume</button>
-            <button class="danger loading-button" id="complete-button" type="button" disabled>Turn In Request</button>
-          </div>
-        </section>
+        <div id="pinned-request-list" class="pinned-request-list empty">
+          No pinned quests on the board yet.
+        </div>
 
         <section class="panel questboard-result-card">
           <h2 class="page-title-secondary">Request Result</h2>
@@ -89,8 +108,6 @@
           <div id="npc-choice-list"></div>
         </section>
       </section>
-
-      <button id="settings-gear-button" class="gear-button">⚙️</button>
 
       <section id="screen-hero" class="app-screen">
         <div class="screen-header">
@@ -112,7 +129,10 @@
           </div>
 
           <div class="hero-profile-meta">
-            <div id="hero-portrait-name" class="portrait-name">Eris-Touched Hero</div>
+            <div class="hero-profile-heading">
+              <div id="hero-portrait-name" class="portrait-name">Eris-Touched Hero</div>
+              <button id="hero-edit-button" class="hero-edit-button" type="button" title="Edit hero profile" aria-label="Edit hero profile">✍️</button>
+            </div>
             <div id="hero-outfit-name" class="portrait-description">Hero Starter Outfit</div>
           </div>
         </section>
@@ -131,7 +151,7 @@
             </div>
 
             <div class="stat">
-              <div class="stat-label">Guild Coins</div>
+              <div class="stat-label">Gold</div>
               <div id="hero-coins" class="stat-value">0</div>
             </div>
 
@@ -161,7 +181,7 @@
       <div id="settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-panel">
           <button id="close-settings-button" class="modal-close-button" type="button">✕</button>
-          <h2 class="page-title-secondary">Guild & Character Settings</h2>
+          <h2 class="page-title-secondary">Edit Hero Profile</h2>
 
           <div class="modal-section">
             <label for="character-name">Character name</label>
@@ -214,21 +234,10 @@
               <option value="Porcelain">Porcelain</option>
             </select>
 
-            <label for="portrait-image-upload">Portrait image</label>
-            <div class="portrait-upload-actions">
-              <input id="portrait-image-upload" type="file" accept="image/png,image/jpeg,image/webp" />
-              <button class="secondary" id="clear-portrait-image-button" type="button">
-                Remove Portrait
-              </button>
-            </div>
-            <div id="portrait-upload-status" class="portrait-upload-status">
-              No portrait uploaded yet.
-            </div>
-
             <div class="prompt-box">
               <strong>Manual image prompt</strong>
               <div id="portrait-prompt-status">
-                Save character choices, copy the prompt, generate the image manually, then upload the portrait here.
+                Save character choices, copy the prompt, generate the image manually, then upload the portrait from the full portrait view.
               </div>
               <div id="portrait-prompt" hidden>
                 A fantasy portrait of an Eris-Touched hero.
@@ -266,6 +275,19 @@
         </div>
       </div>
 
+      <div id="minutes-prompt-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-panel minutes-prompt-panel">
+          <button id="close-minutes-prompt-button" class="modal-close-button" type="button">✕</button>
+          <h2 class="page-title-secondary">Task Completion Time</h2>
+          <label for="minutes-input">How many minutes did this task take?</label>
+          <input id="minutes-input" type="number" min="1" step="1" value="1" />
+          <div class="request-modal-actions">
+            <button id="cancel-minutes-prompt-button" class="secondary" type="button">Cancel</button>
+            <button id="confirm-minutes-prompt-button" class="primary" type="button">Save Minutes</button>
+          </div>
+        </div>
+      </div>
+
       <div id="request-modal" class="modal-overlay" style="display: none;">
         <div class="modal-panel request-modal-panel">
           <button id="close-request-button" class="modal-close-button" type="button">✕</button>
@@ -275,13 +297,13 @@
             <label for="task">Guild Request</label>
             <input id="task" value="Clean my room" placeholder="What needs to be done?" />
 
-            <div class="questboard-estimate-row">
-              <div class="questboard-estimate-label">Est. Time</div>
-              <div class="questboard-time-presets" aria-label="Estimated time presets">
-                <button type="button" class="questboard-time-button" data-planned-minutes="25">25 min</button>
-                <button type="button" class="questboard-time-button" data-planned-minutes="30">30 min</button>
-                <button type="button" class="questboard-time-button active" data-planned-minutes="45">45 min</button>
-                <button type="button" class="questboard-time-button" data-planned-minutes="60">60 min</button>
+
+            <div class="questboard-size-row">
+              <div class="questboard-size-label">Request Size</div>
+              <div class="questboard-size-presets" aria-label="Request size presets">
+                <button type="button" class="questboard-size-button" data-request-size="small">Small</button>
+                <button type="button" class="questboard-size-button active" data-request-size="medium">Medium</button>
+                <button type="button" class="questboard-size-button" data-request-size="large">Large</button>
               </div>
             </div>
 
@@ -312,7 +334,27 @@
               <div id="portrait-modal-level" class="portrait-modal-subtext">Level 1</div>
               <div class="portrait-modal-outfit-pill">COMMON · <span id="portrait-modal-outfit">Hero Starter Outfit</span></div>
               <div class="portrait-modal-actions">
-                <button id="save-image-button" class="secondary" type="button">Save Image</button>
+                <button id="save-image-button" class="secondary icon-only-button" type="button" title="Download portrait" aria-label="Download portrait">&#8681;</button>
+                <details class="portrait-upload-menu">
+                  <summary class="secondary icon-only-button" title="Upload portrait" aria-label="Upload portrait">&#8679;</summary>
+                  <div class="portrait-upload-panel">
+                    <label for="portrait-image-upload">Upload portrait</label>
+                    <input id="portrait-image-upload" type="file" accept="image/png,image/jpeg,image/webp" />
+                    <p class="portrait-drag-help">Drag the portrait in the circle to reposition it.</p>
+                    <div class="portrait-zoom-actions" aria-label="Portrait zoom controls">
+                      <button class="secondary icon-only-button" id="portrait-zoom-out-button" type="button" title="Zoom out" aria-label="Zoom out">-</button>
+                      <span id="portrait-zoom-label">100%</span>
+                      <button class="secondary icon-only-button" id="portrait-zoom-in-button" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+                    </div>
+                    <div class="portrait-upload-actions">
+                      <button class="primary" id="save-portrait-upload-button" type="button">Save Portrait</button>
+                      <button class="secondary" id="clear-portrait-image-button" type="button">Remove Portrait</button>
+                    </div>
+                    <div id="portrait-upload-status" class="portrait-upload-status">
+                      No portrait uploaded yet.
+                    </div>
+                  </div>
+                </details>
                 <button id="generate-image-button" class="primary loading-button" type="button">Copy Image Prompt</button>
               </div>
               <div id="portrait-generation-status" class="portrait-modal-subtext" aria-live="polite"></div>
@@ -388,7 +430,7 @@
               <div id="chronicle-total-xp">0</div>
             </div>
             <div class="stat-card">
-              <strong>Guild Coins</strong>
+              <strong>Gold</strong>
               <div id="chronicle-coins">0</div>
             </div>
             <div class="stat-card">

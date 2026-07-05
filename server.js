@@ -71,6 +71,9 @@ let character = {
     DEFAULT_SKIN_COLOR
   ),
   portraitImageUrl: "",
+  portraitCropX: 50,
+  portraitCropY: 50,
+  portraitZoom: 1,
   outfitName: "Hero Starter Outfit",
   race: DEFAULT_CHARACTER_RACE,
   hairColor: DEFAULT_HAIR_COLOR,
@@ -237,6 +240,9 @@ function loadGame() {
       portraitImageUrl: isValidPortraitImageSource(saveData.character?.portraitImageUrl)
         ? saveData.character.portraitImageUrl.trim()
         : "",
+      portraitCropX: clampNumber(saveData.character?.portraitCropX, 0, 100, 50),
+      portraitCropY: clampNumber(saveData.character?.portraitCropY, 0, 100, 50),
+      portraitZoom: clampNumber(saveData.character?.portraitZoom, 1, 3, 1),
       outfitName:
         typeof saveData.character?.outfitName === "string" &&
         saveData.character.outfitName.trim().length > 0
@@ -281,6 +287,17 @@ const lootSchema = z.object({
   xpBonus: z.number().optional(),
   coins: z.number().optional(),
 });
+const requestSubtaskSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  details: z.string().optional(),
+});
+const requestPlanSchema = z.object({
+  size: z.enum(["small", "medium", "large"]),
+  title: z.string().optional(),
+  summary: z.string(),
+  subtasks: z.array(requestSubtaskSchema),
+});
 
 const playerSchema = z.object({
   name: z.string(),
@@ -305,12 +322,18 @@ const questSchema = z.object({
   hasItem: z.boolean().optional(),
   rewardSummary: z.string().optional(),
   story: z.string().optional(),
+  questTitle: z.string().optional(),
+  requestSize: z.enum(["small", "medium", "large"]).optional(),
+  requestPlan: requestPlanSchema.optional(),
 });
 const pinnedRequestSchema = z.object({
   id: z.string(),
   task: z.string(),
   plannedMinutes: z.number(),
   createdAt: z.string(),
+  questTitle: z.string().optional(),
+  requestSize: z.enum(["small", "medium", "large"]).optional(),
+  requestPlan: requestPlanSchema.optional(),
 });
 const storyChapterSchema = z.object({
   id: z.string(),
@@ -335,6 +358,9 @@ const characterSchema = z.object({
   description: z.string(),
   portraitPrompt: z.string(),
   portraitImageUrl: z.string(),
+  portraitCropX: z.number().optional(),
+  portraitCropY: z.number().optional(),
+  portraitZoom: z.number().optional(),
   outfitName: z.string(),
   race: z.string(),
   hairColor: z.string(),
@@ -359,11 +385,15 @@ const questOutputSchema = {
   storyChapters: z.array(storyChapterSchema),
   appSettings: appSettingsSchema,
   appVersion: z.string().optional(),
+  requestPlan: requestPlanSchema.optional(),
 };
 
 const startQuestInputSchema = {
   task: z.string().min(1),
+  questTitle: z.string().min(1).max(120).optional(),
   plannedMinutes: z.number().min(1).max(600),
+  requestSize: z.enum(["small", "medium", "large"]).optional(),
+  requestPlan: requestPlanSchema.optional(),
 };
 
 const pinQuestInputSchema = startQuestInputSchema;
@@ -371,11 +401,16 @@ const pinQuestInputSchema = startQuestInputSchema;
 const embarkQuestInputSchema = {
   requestId: z.string().min(1).optional(),
   task: z.string().min(1).optional(),
+  questTitle: z.string().min(1).max(120).optional(),
   plannedMinutes: z.number().min(1).max(600).optional(),
+  requestSize: z.enum(["small", "medium", "large"]).optional(),
+  requestPlan: requestPlanSchema.optional(),
 };
 
 const completeQuestInputSchema = {
   actualMinutes: z.number().min(0).max(600).optional(),
+  questTitle: z.string().min(1).max(120).optional(),
+  task: z.string().min(1).max(200).optional(),
 };
 
 const chooseNpcInputSchema = {
@@ -385,6 +420,9 @@ const updateCharacterInputSchema = {
   name: z.string().min(1).max(60),
   description: z.string().min(1).max(1000),
   portraitImageUrl: z.string().max(1500000).optional(),
+  portraitCropX: z.number().min(0).max(100).optional(),
+  portraitCropY: z.number().min(0).max(100).optional(),
+  portraitZoom: z.number().min(1).max(3).optional(),
   outfitName: z.string().max(120).optional(),
   race: z.string().min(1).max(80).optional(),
   hairColor: z.string().min(1).max(80).optional(),
@@ -437,7 +475,7 @@ function getStoryToneLabel(storyTone) {
   return labels[storyTone] ?? "Epic Heroic";
 }
 
-function reply(message) {
+function reply(message, extraStructuredContent = {}) {
   return {
     content: message ? [{ type: "text", text: message }] : [],
     structuredContent: {
@@ -451,6 +489,7 @@ function reply(message) {
       storyChapters,
       appSettings,
       appVersion: ERIS_PATCH_VERSION,
+      ...extraStructuredContent,
     },
   };
 }
@@ -584,11 +623,27 @@ function getRewardSummary(reward) {
   return `${reward.coins} Guild Coins`;
 }
 
-function chooseReward(minutes, rng = Math.random) {
-  const normalizedMinutes = Math.max(0, Math.floor(minutes));
+function chooseReward(actualMinutes, rng = Math.random) {
+  const normalizedMinutes = Math.max(0, Math.floor(actualMinutes));
   const baseCoins = Math.round(normalizedMinutes * 10);
   const baseXp = Math.max(5, Math.round(normalizedMinutes * 8));
   const tier = getRewardTier(normalizedMinutes);
+
+  if (tier === 0) {
+    return {
+      rarity: "",
+      loot: "",
+      coins: baseCoins,
+      xp: baseXp,
+      goldBonus: 0,
+      hasItem: false,
+      rewardSummary: getRewardSummary({
+        hasItem: false,
+        coins: baseCoins,
+      }),
+    };
+  }
+
   const tierConfig = REWARD_RARITY_PROBABILITIES.find(
     (entry) => entry.minMinutes === tier
   );
@@ -618,6 +673,198 @@ function chooseReward(minutes, rng = Math.random) {
       loot: item,
     }),
   };
+}
+
+function normalizeRequestSize(value) {
+  const size = String(value || "").trim().toLowerCase();
+
+  if (size === "small" || size === "medium" || size === "large") {
+    return size;
+  }
+
+  return "medium";
+}
+
+function getRequestStepCount(size, rng = Math.random) {
+  if (size === "small") return 1;
+  if (size === "medium") {
+    return 2 + Math.floor(rng() * 3);
+  }
+
+  return 5 + Math.floor(rng() * 3);
+}
+
+function toTitleCase(value) {
+  return String(value || "")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function createFantasyQuestTitle(task) {
+  const cleanTask = String(task || "").replace(/[^a-z0-9\s]/gi, " ").trim();
+  const words = cleanTask.split(/\s+/).filter((word) => word.length > 2);
+  const subject = toTitleCase(
+    words.slice(0, 3).join(" ") || cleanTask || "The Unmarked Task"
+  );
+  const templates = [
+    `The ${subject} Accord`,
+    `The Charter of ${subject}`,
+    `The ${subject} Vigil`,
+    `The Guild Trial of ${subject}`,
+  ];
+  const index =
+    Math.abs([...subject].reduce((total, char) => total + char.charCodeAt(0), 0)) %
+    templates.length;
+
+  return templates[index];
+}
+
+function createFallbackRequestPlan(task, requestSize, plannedMinutes, rng = Math.random) {
+  const size = normalizeRequestSize(requestSize);
+  const cleanTask = task.trim();
+  const stepCount = getRequestStepCount(size, rng);
+  const stepTemplates = [
+    "Prepare the workspace",
+    "Break the request into smaller pieces",
+    "Do the main work",
+    "Review the result",
+    "Tidy up and finish strong",
+    "Double-check the details",
+    "Deliver the final pass",
+  ];
+
+  const subtasks = Array.from({ length: stepCount }, (_, index) => {
+    const baseTitle =
+      size === "small"
+        ? cleanTask
+        : stepTemplates[index % stepTemplates.length];
+
+    return {
+      id: `plan-${Date.now()}-${index + 1}`,
+      title:
+        size === "small"
+          ? cleanTask
+          : `${baseTitle}${index === 0 ? ` for ${cleanTask}` : ""}`,
+      details:
+        size === "small"
+          ? `Complete: ${cleanTask}.`
+          : `${cleanTask} step ${index + 1} of ${stepCount}.`,
+    };
+  });
+
+  return {
+    size,
+    title: createFantasyQuestTitle(cleanTask),
+    summary:
+      size === "small"
+        ? `Single-step request for ${cleanTask}.`
+        : `${size[0].toUpperCase()}${size.slice(1)} request broken into ${stepCount} steps for ${cleanTask}.`,
+    subtasks,
+    plannedMinutes: Math.max(1, Math.floor(Number(plannedMinutes) || 25)),
+  };
+}
+
+function sanitizeRequestPlan(plan, task, requestSize, plannedMinutes) {
+  if (!plan || typeof plan !== "object") {
+    return createFallbackRequestPlan(task, requestSize, plannedMinutes);
+  }
+
+  const size = normalizeRequestSize(plan.size ?? requestSize);
+  const fallback = createFallbackRequestPlan(task, size, plannedMinutes);
+  const subtasks = Array.isArray(plan.subtasks) ? plan.subtasks : [];
+  const safeSubtasks = subtasks
+    .map((subtask, index) => ({
+      id:
+        typeof subtask?.id === "string" && subtask.id.trim()
+          ? subtask.id.trim()
+          : fallback.subtasks[index % fallback.subtasks.length]?.id ?? `plan-${index + 1}`,
+      title: String(subtask?.title || "").trim(),
+      details: String(subtask?.details || "").trim() || undefined,
+    }))
+    .filter((subtask) => subtask.title);
+
+  const minSteps = size === "small" ? 1 : size === "medium" ? 2 : 5;
+  const targetSteps = Math.max(minSteps, safeSubtasks.length || fallback.subtasks.length);
+
+  while (safeSubtasks.length < targetSteps) {
+    const fallbackSubtask = fallback.subtasks[safeSubtasks.length % fallback.subtasks.length];
+    safeSubtasks.push({
+      id: fallbackSubtask.id,
+      title: fallbackSubtask.title,
+      details: fallbackSubtask.details,
+    });
+  }
+
+  return {
+    size,
+    title:
+      String(plan.title || fallback.title || createFantasyQuestTitle(task)).trim() ||
+      fallback.title,
+    summary: String(plan.summary || fallback.summary).trim() || fallback.summary,
+    plannedMinutes: Math.max(1, Math.floor(Number(plan.plannedMinutes) || fallback.plannedMinutes)),
+    subtasks: safeSubtasks.slice(0, Math.max(targetSteps, fallback.subtasks.length)),
+  };
+}
+
+async function createRequestPlanWithOllama(task, requestSize, plannedMinutes) {
+  try {
+    const stepCount = getRequestStepCount(normalizeRequestSize(requestSize));
+    const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt:
+          `Create a request plan for a fantasy guild quest. ` +
+          `Quest task: "${task}". Request size: ${normalizeRequestSize(requestSize)}. ` +
+          `Request planning budget: ${plannedMinutes} internal minutes. ` +
+          `Return JSON only in this exact shape: {"title":"...","summary":"...","subtasks":[{"title":"...","details":"..."}]}. ` +
+          `Make the title a short fantasy guild quest name. Make the summary one sentence and produce exactly ${stepCount} subtasks. ` +
+          `Subtasks should be short, actionable, and tailored to the quest. No markdown, no code fences.`,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          max_tokens: 220,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status !== 404) {
+        console.error("Ollama request-plan API error:", response.status);
+      }
+      return createFallbackRequestPlan(task, requestSize, plannedMinutes);
+    }
+
+    const body = await response.json();
+    const generatedText = body?.response?.trim() || "";
+
+    if (!generatedText) {
+      return createFallbackRequestPlan(task, requestSize, plannedMinutes);
+    }
+
+    const jsonText = generatedText.match(/\{[\s\S]*\}/)?.[0] ?? generatedText;
+    const parsedPlan = JSON.parse(jsonText);
+    return sanitizeRequestPlan(parsedPlan, task, requestSize, plannedMinutes);
+  } catch (error) {
+    console.error("Ollama request-plan generation error:", error);
+    return createFallbackRequestPlan(task, requestSize, plannedMinutes);
+  }
+}
+
+async function createRequestPlan(task, requestSize, plannedMinutes) {
+  const normalizedSize = normalizeRequestSize(requestSize);
+
+  if (STORY_GENERATION_SERVICE.toLowerCase() === "ollama") {
+    return await createRequestPlanWithOllama(task, normalizedSize, plannedMinutes);
+  }
+
+  return createFallbackRequestPlan(task, normalizedSize, plannedMinutes);
 }
 async function createQuestOpening(task) {
   const service = STORY_GENERATION_SERVICE.toLowerCase();
@@ -652,7 +899,9 @@ async function generateQuestOpeningWithOllama(task) {
     });
 
     if (!response.ok) {
-      console.error("Ollama API error:", response.status);
+      if (response.status !== 404) {
+        console.error("Ollama API error:", response.status);
+      }
       return getTemplateQuestOpening(task);
     }
 
@@ -751,7 +1000,9 @@ async function generateStoryChapterWithOllama(task, minutes, reward, finalXp, kn
     });
 
     if (!response.ok) {
-      console.error("Ollama API error:", response.status);
+      if (response.status !== 404) {
+        console.error("Ollama API error:", response.status);
+      }
       return getTemplateStoryChapter(task, minutes, reward, finalXp, knownNpcs, storyTone);
     }
 
@@ -1041,21 +1292,33 @@ function generateNpcChoices() {
 async function pinQuestTool(args) {
   const task = args?.task?.trim?.() ?? "";
   const plannedMinutes = clampNumber(args?.plannedMinutes, 1, 600, 25);
+  const requestSize = normalizeRequestSize(args?.requestSize);
 
   if (!task) {
     return reply("Missing guild request task.");
   }
 
+  const requestPlan = sanitizeRequestPlan(
+    args?.requestPlan ?? (await createRequestPlan(task, requestSize, plannedMinutes)),
+    task,
+    requestSize,
+    plannedMinutes
+  );
+  requestPlan.title = args?.questTitle?.trim?.() || requestPlan.title;
+
   const pinnedRequest = {
     id: `pinned-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     task,
+    questTitle: requestPlan.title,
     plannedMinutes,
     createdAt: new Date().toISOString(),
+    requestSize,
+    requestPlan,
   };
 
   pinnedRequests = [pinnedRequest, ...pinnedRequests].slice(0, 20);
   questLog = [
-    `Pinned guild request: ${task} (${plannedMinutes} min).`,
+    `Pinned guild request: ${task}.`,
     ...questLog,
   ].slice(0, 12);
 
@@ -1083,17 +1346,36 @@ async function embarkQuestTool(args) {
     600,
     25
   );
+  const requestSize = normalizeRequestSize(
+    pinnedRequest?.requestSize ?? args?.requestSize
+  );
 
   if (!task) {
     return reply("Missing guild request task.");
   }
 
+  const requestPlan = sanitizeRequestPlan(
+    pinnedRequest?.requestPlan ??
+      args?.requestPlan ??
+      (await createRequestPlan(task, requestSize, plannedMinutes)),
+    task,
+    requestSize,
+    plannedMinutes
+  );
+  requestPlan.title =
+    pinnedRequest?.questTitle ||
+    args?.questTitle?.trim?.() ||
+    requestPlan.title;
+
   currentQuest = {
     id: `quest-${nextQuestId++}`,
     task,
+    questTitle: requestPlan.title,
     plannedMinutes,
     startedAt: new Date().toISOString(),
     status: "active",
+    requestSize,
+    requestPlan,
   };
 
   if (pinnedRequest) {
@@ -1112,7 +1394,30 @@ async function startQuestTool(args) {
   return await embarkQuestTool(args);
 }
 
-async function finalizeQuestCompletion(actualMinutes) {
+async function planQuestTool(args) {
+  const task = args?.task?.trim?.() ?? "";
+  const plannedMinutes = clampNumber(args?.plannedMinutes, 1, 600, 25);
+  const requestSize = normalizeRequestSize(args?.requestSize);
+
+  if (!task) {
+    return reply("Missing guild request task.");
+  }
+
+  const requestPlan = sanitizeRequestPlan(
+    args?.requestPlan ??
+      (await createRequestPlan(task, requestSize, plannedMinutes)),
+    task,
+    requestSize,
+    plannedMinutes
+  );
+  requestPlan.title = args?.questTitle?.trim?.() || requestPlan.title;
+
+  return reply(`Planned ${requestSize} request: ${task}.`, {
+    requestPlan,
+  });
+}
+
+async function finalizeQuestCompletion(actualMinutes, completionDetails = {}) {
   if (!currentQuest) {
     return { ok: false, message: "There is no active quest to complete." };
   }
@@ -1129,9 +1434,15 @@ async function finalizeQuestCompletion(actualMinutes) {
     ...reward,
     coins: finalCoins,
   });
+  const storyTask =
+    completionDetails.questTitle?.trim?.() ||
+    currentQuest.questTitle ||
+    currentQuest.requestPlan?.title ||
+    currentQuest.task;
+  const displayTask = completionDetails.task?.trim?.() || currentQuest.task;
 
   const story = createQuestCompletionStory(
-    currentQuest.task,
+    storyTask,
     actualMinutes,
     {
       ...reward,
@@ -1144,6 +1455,8 @@ async function finalizeQuestCompletion(actualMinutes) {
 
   currentQuest = {
     ...currentQuest,
+    task: displayTask,
+    questTitle: storyTask,
     status: "completed",
     actualMinutes,
     xp: finalXp,
@@ -1174,7 +1487,7 @@ async function finalizeQuestCompletion(actualMinutes) {
   questLog = [story, ...questLog].slice(0, 12);
 
   const chapter = await createStoryChapter(
-    currentQuest.task,
+    storyTask,
     actualMinutes,
     {
       ...reward,
@@ -1220,9 +1533,25 @@ async function completeQuestTool(args) {
     600,
     currentQuest.plannedMinutes
   );
-  const result = await finalizeQuestCompletion(actualMinutes);
+  const result = await finalizeQuestCompletion(actualMinutes, {
+    questTitle: args?.questTitle,
+    task: args?.task,
+  });
 
   return reply(result.message);
+}
+
+async function cancelQuestTool() {
+  if (!currentQuest) {
+    return reply("There is no active request to cancel.");
+  }
+
+  const task = currentQuest.task;
+  currentQuest = null;
+  questLog = [`Canceled guild request: ${task}.`, ...questLog].slice(0, 12);
+  saveGame();
+
+  return reply(`Canceled guild request: ${task}.`);
 }
 
 async function updateCharacterTool(args) {
@@ -1237,6 +1566,9 @@ async function updateCharacterTool(args) {
     args?.portraitImageUrl,
     character.portraitImageUrl
   );
+  const portraitCropX = clampNumber(args?.portraitCropX, 0, 100, character.portraitCropX ?? 50);
+  const portraitCropY = clampNumber(args?.portraitCropY, 0, 100, character.portraitCropY ?? 50);
+  const portraitZoom = clampNumber(args?.portraitZoom, 1, 3, character.portraitZoom ?? 1);
 
   if (!portraitImageUrl.ok) {
     return reply(portraitImageUrl.message);
@@ -1253,6 +1585,9 @@ async function updateCharacterTool(args) {
       skinColor
     ),
     portraitImageUrl: portraitImageUrl.value,
+    portraitCropX,
+    portraitCropY,
+    portraitZoom,
     outfitName:
       args?.outfitName?.trim?.() ||
       character.outfitName ||
@@ -1307,6 +1642,9 @@ async function generatePortraitTool(args) {
     ...character,
     portraitPrompt: result.prompt,
     portraitImageUrl: result.imageUrl,
+    portraitCropX: 50,
+    portraitCropY: 50,
+    portraitZoom: 1,
   };
 
   questLog = [
@@ -1415,6 +1753,9 @@ function createErisServer() {
         args?.portraitImageUrl,
         character.portraitImageUrl
       );
+      const portraitCropX = clampNumber(args?.portraitCropX, 0, 100, character.portraitCropX ?? 50);
+      const portraitCropY = clampNumber(args?.portraitCropY, 0, 100, character.portraitCropY ?? 50);
+      const portraitZoom = clampNumber(args?.portraitZoom, 1, 3, character.portraitZoom ?? 1);
 
       if (!portraitImageUrl.ok) {
         return reply(portraitImageUrl.message);
@@ -1431,6 +1772,9 @@ function createErisServer() {
           skinColor
         ),
         portraitImageUrl: portraitImageUrl.value,
+        portraitCropX,
+        portraitCropY,
+        portraitZoom,
         outfitName:
           args?.outfitName?.trim?.() ||
           character.outfitName ||
@@ -1532,6 +1876,24 @@ function createErisServer() {
 
   registerAppTool(
     server,
+    "plan_focus_request",
+    {
+      title: "Plan Guild Request",
+      description:
+        "Creates a size-based subtask plan for a new guild request without starting the timer.",
+      inputSchema: startQuestInputSchema,
+      outputSchema: questOutputSchema,
+      _meta: {
+        ui: { resourceUri: APP_URI },
+      },
+    },
+    async (args) => {
+      return await planQuestTool(args);
+    }
+  );
+
+  registerAppTool(
+    server,
     "pin_focus_quest",
     {
       title: "Pin Guild Request",
@@ -1580,33 +1942,7 @@ function createErisServer() {
       },
     },
     async (args) => {
-      const task = args?.task?.trim?.() ?? "";
-      const plannedMinutes = clampNumber(args?.plannedMinutes, 1, 600, 25);
-
-      if (!task) {
-        return reply("Missing quest task.");
-      }
-
-      if (currentQuest?.status === "active") {
-        return reply(
-          `A request is already active: ${currentQuest.task}. Turn it in before accepting another.`
-        );
-      }
-
-      currentQuest = {
-        id: `quest-${nextQuestId++}`,
-        task,
-        plannedMinutes,
-        startedAt: new Date().toISOString(),
-        status: "active",
-      };
-
-      const opening = await createQuestOpening(task);
-      questLog = [opening, ...questLog].slice(0, 12);
-
-      saveGame();
-
-      return reply(`Started focus quest: ${task}`);
+      return await startQuestTool(args);
     }
   );
 
@@ -1639,9 +1975,30 @@ function createErisServer() {
         currentQuest.plannedMinutes
       );
 
-      const result = await finalizeQuestCompletion(actualMinutes);
+      const result = await finalizeQuestCompletion(actualMinutes, {
+        questTitle: args?.questTitle,
+        task: args?.task,
+      });
 
       return reply(result.message);
+    }
+  );
+
+  registerAppTool(
+    server,
+    "cancel_focus_quest",
+    {
+      title: "Cancel Focus Quest",
+      description:
+        "Cancels the current active request without awarding rewards.",
+      inputSchema: emptyInputSchema,
+      outputSchema: questOutputSchema,
+      _meta: {
+        ui: { resourceUri: APP_URI },
+      },
+    },
+    async () => {
+      return await cancelQuestTool();
     }
   );
 
@@ -1692,12 +2049,7 @@ function isAllowedOrigin(origin) {
     return true;
   }
 
-  try {
-    new URL(origin);
-    return true;
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 function applyCorsHeaders(req, res) {
@@ -1845,6 +2197,29 @@ function createHttpServer() {
     return;
   }
 
+  if (url.pathname === "/api/plan-request" && req.method === "POST") {
+    if (!applyCorsHeaders(req, res)) {
+      res.writeHead(403).end("Origin not allowed");
+      return;
+    }
+    try {
+      const body = await new Promise((resolve, reject) => {
+        let data = "";
+        req.on("data", chunk => data += chunk);
+        req.on("end", () => resolve(data));
+        req.on("error", reject);
+      });
+      const args = JSON.parse(body);
+      const response = await planQuestTool(args);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(response));
+    } catch (error) {
+      console.error("Plan request error:", error);
+      res.writeHead(500).end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
+
   if (url.pathname === "/api/embark-quest" && req.method === "POST") {
     if (!applyCorsHeaders(req, res)) {
       res.writeHead(403).end("Origin not allowed");
@@ -1909,6 +2284,22 @@ function createHttpServer() {
       res.end(JSON.stringify(response));
     } catch (error) {
       console.error("Complete quest error:", error);
+      res.writeHead(500).end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/cancel-quest" && req.method === "POST") {
+    if (!applyCorsHeaders(req, res)) {
+      res.writeHead(403).end("Origin not allowed");
+      return;
+    }
+    try {
+      const response = await cancelQuestTool();
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(response));
+    } catch (error) {
+      console.error("Cancel quest error:", error);
       res.writeHead(500).end(JSON.stringify({ error: error.message }));
     }
     return;
