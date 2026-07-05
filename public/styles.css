@@ -1003,11 +1003,13 @@ body {
 
 /* Patch 1.0003 — Questboard visual redesign */
 .questboard-screen {
-  padding-top: 118px;
+  padding-top: clamp(154px, 44vw, 196px);
   padding-bottom: 110px;
 }
 
 .questboard-hero-stack {
+  --questboard-portrait-size: clamp(136px, 38vw, 176px);
+  --questboard-header-left-clearance: calc(var(--questboard-portrait-size) + 14px);
   position: fixed;
   top: 18px;
   left: 50%;
@@ -1020,6 +1022,53 @@ body {
   box-sizing: border-box;
   overflow: visible;
   padding-top: 0;
+  isolation: isolate;
+}
+
+.questboard-portrait-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--questboard-portrait-size);
+  height: calc(var(--questboard-portrait-size) + 18px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.questboard-portrait-shell {
+  width: 100%;
+  border-width: 5px;
+  box-shadow:
+    0 0 0 4px rgba(48, 29, 12, 0.98),
+    0 0 0 6px rgba(184, 131, 55, 0.62),
+    0 12px 24px rgba(0, 0, 0, 0.46),
+    inset 0 0 24px rgba(0, 0, 0, 0.54);
+  pointer-events: auto;
+}
+
+.questboard-level-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 44%);
+  min-width: 84px;
+  padding: 7px 14px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 184, 94, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255, 234, 163, 0.96), rgba(201, 137, 42, 0.96)),
+    #d29136;
+  color: #2b1808;
+  font-size: 0.83rem;
+  font-weight: 950;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 0 rgba(88, 43, 9, 0.24),
+    0 5px 12px rgba(0, 0, 0, 0.36);
+  z-index: 3;
 }
 
 .questboard-hero-status-bar {
@@ -1033,7 +1082,7 @@ body {
   width: 100%;
   box-sizing: border-box;
   min-height: 84px;
-  padding: 10px 16px;
+  padding: 10px 16px 10px var(--questboard-header-left-clearance);
   border-radius: 20px;
   background:
     radial-gradient(circle at 50% 0%, rgba(255, 221, 146, 0.18), transparent 46%),
@@ -1521,10 +1570,11 @@ body.overlay-visible .bottom-nav {
 
 @media (max-width: 420px) {
   .questboard-screen {
-    padding-top: 104px;
+    padding-top: clamp(154px, 44vw, 184px);
   }
 
   .questboard-hero-stack {
+    --questboard-portrait-size: clamp(130px, 37vw, 154px);
     position: fixed;
     top: 18px;
     left: 50%;
@@ -1537,6 +1587,11 @@ body.overlay-visible .bottom-nav {
     padding-top: 0;
   }
 
+  .questboard-portrait-stage {
+    width: var(--questboard-portrait-size);
+    height: calc(var(--questboard-portrait-size) + 16px);
+  }
+
   .questboard-hero-status-bar {
     --questboard-gold-slot-width: 80px;
     --questboard-progress-right-gap: 8px;
@@ -1544,7 +1599,7 @@ body.overlay-visible .bottom-nav {
     gap: 8px;
     min-height: 70px;
     width: 100%;
-    padding: 10px 10px 9px 10px;
+    padding: 10px 10px 9px var(--questboard-header-left-clearance);
   }
 
   .questboard-status-name {
