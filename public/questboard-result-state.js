@@ -1,5 +1,3 @@
-import "/journey-chronicle-collapse.js";
-
 export function getQuestResultPanelState(currentQuest, lastCompletedQuest, options = {}) {
   const { questStarted = false } = options;
   const completedQuest = lastCompletedQuest || (currentQuest?.status === "completed" ? currentQuest : null);
