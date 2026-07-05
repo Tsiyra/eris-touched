@@ -880,18 +880,18 @@ body {
         position: fixed;
         left: 50%;
         transform: translateX(-50%);
-        bottom: 18px;
-        width: min(374px, calc(100% - 40px));
+        bottom: 0;
+        width: min(390px, calc(100vw - 36px));
         display: grid;
         grid-template-columns: repeat(5, 1fr);
         gap: 4px;
         padding: 8px;
-        border-radius: 0 0 22px 22px;
+        border-radius: 0;
         background:
           linear-gradient(180deg, rgba(48, 31, 17, 0.96), rgba(16, 12, 9, 0.98));
         border: 1px solid rgba(207, 153, 74, 0.45);
         border-top-color: rgba(246, 205, 119, 0.28);
-        z-index: 90;
+        z-index: 18;
         box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.42);
       }
 
@@ -994,6 +994,8 @@ body {
         .bottom-nav {
           bottom: 0;
           width: 100%;
+          left: 0;
+          transform: none;
           border-left: 0;
           border-right: 0;
         }
@@ -1373,6 +1375,13 @@ body {
 
 .nav-button.active {
   box-shadow: inset 0 0 0 1px rgba(255, 226, 149, 0.18);
+}
+
+body.focus-session-active .bottom-nav,
+body.overlay-visible .bottom-nav {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 @media (max-width: 420px) {

@@ -115,6 +115,21 @@ const ERIS_PATCH_VERSION = "1.0005";
       const confirmMinutesPromptButton = document.querySelector("#confirm-minutes-prompt-button");
       const navButtons = document.querySelectorAll(".nav-button");
       const appScreens = document.querySelectorAll(".app-screen");
+      const activeOverlayLayers = new Set();
+
+      function syncOverlayChrome() {
+        document.body.classList.toggle("overlay-visible", activeOverlayLayers.size > 0);
+      }
+
+      function setOverlayLayerVisible(layer, isVisible) {
+        if (!layer) return;
+        if (isVisible) {
+          activeOverlayLayers.add(layer);
+        } else {
+          activeOverlayLayers.delete(layer);
+        }
+        syncOverlayChrome();
+      }
 
       function showScreen(screenName) {
         appScreens.forEach((screen) => {
@@ -811,6 +826,7 @@ const ERIS_PATCH_VERSION = "1.0005";
 
         minutesPromptInput.value = String(Math.max(1, Math.round(Number(defaultMinutes) || 1)));
         minutesPromptModal.style.display = "grid";
+        setOverlayLayerVisible(minutesPromptModal, true);
         setTimeout(() => minutesPromptInput?.focus?.(), 0);
 
         return new Promise((resolve) => {
@@ -821,6 +837,7 @@ const ERIS_PATCH_VERSION = "1.0005";
       function closeMinutesPromptModal() {
         if (minutesPromptModal) {
           minutesPromptModal.style.display = "none";
+          setOverlayLayerVisible(minutesPromptModal, false);
         }
       }
 
@@ -2479,16 +2496,19 @@ const ERIS_PATCH_VERSION = "1.0005";
       }
 
       function openSettingsModal() {
+        setOverlayLayerVisible(settingsModal, true);
         settingsModal.style.display = "grid";
       }
 
       function closeSettingsModal() {
         settingsModal.style.display = "none";
+        setOverlayLayerVisible(settingsModal, false);
       }
 
       function openRequestModal() {
         if (!requestModal) return;
         requestModal.style.display = "grid";
+        setOverlayLayerVisible(requestModal, true);
         setRequestModalStatus("");
         updateRequestSizeButtons();
         setTimeout(() => taskInput?.focus?.(), 0);
@@ -2497,14 +2517,17 @@ const ERIS_PATCH_VERSION = "1.0005";
       function closeRequestModal() {
         if (!requestModal) return;
         requestModal.style.display = "none";
+        setOverlayLayerVisible(requestModal, false);
       }
 
       function openPortraitModal() {
         portraitModal.style.display = "grid";
+        setOverlayLayerVisible(portraitModal, true);
       }
 
       function closePortraitModal() {
         portraitModal.style.display = "none";
+        setOverlayLayerVisible(portraitModal, false);
       }
 
       function updateFromResponse(response) {
