@@ -16,39 +16,28 @@
       </p>
 
       <section id="screen-questboard" class="app-screen active-screen questboard-screen">
-        <section class="questboard-hero-status-bar" aria-label="Questboard hero status">
-          <div class="hero-portrait-shell questboard-status-portrait" id="questboard-portrait-shell">
-            <div class="hero-portrait-content">
-              <img id="questboard-portrait-image" class="hero-portrait-image" alt="Character portrait" />
-              <div id="questboard-portrait-placeholder" class="hero-portrait-placeholder questboard-status-placeholder">
-                <div id="questboard-portrait-initials" class="hero-portrait-initials"></div>
-                <div class="hero-portrait-label">Add a portrait in settings</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="questboard-status-main">
-            <div class="questboard-status-heading">
+        <div class="questboard-hero-stack" aria-label="Questboard hero status">
+          <section class="questboard-hero-status-bar">
+            <div class="questboard-status-main">
               <div class="questboard-status-copy">
                 <div id="questboard-portrait-name" class="questboard-status-name">Eris-Touched Hero</div>
                 <div id="questboard-outfit-name" class="questboard-status-subtitle">Eris-Touched Hero</div>
               </div>
-              <div id="questboard-level-badge" class="questboard-level-badge">Lv 1</div>
-            </div>
 
-            <div class="questboard-status-progress">
-              <div class="questboard-status-track">
-                <div id="questboard-level-fill" class="questboard-status-fill"></div>
+              <div class="questboard-status-progress">
+                <div class="questboard-status-track">
+                  <div id="questboard-level-fill" class="questboard-status-fill"></div>
+                </div>
+                <div id="questboard-level-label" class="questboard-status-label">0 / 90 XP to Level 2</div>
               </div>
-              <div id="questboard-level-label" class="questboard-status-label">0 / 90 XP to Level 2</div>
             </div>
-          </div>
 
-          <div class="questboard-status-gold">
-            <div class="questboard-status-stat-label">Gold</div>
-            <div id="questboard-gold-total" class="questboard-status-stat-value">0</div>
-          </div>
-        </section>
+            <div class="questboard-status-gold">
+              <span class="questboard-status-gold-icon" aria-hidden="true">&#x1FA99;</span>
+              <span id="questboard-gold-total" class="questboard-status-stat-value">0</span>
+            </div>
+          </section>
+        </div>
 
         <div class="screen-header questboard-title-plate">
           <div class="page-title">Questboard</div>

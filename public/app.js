@@ -1490,6 +1490,9 @@ const ERIS_PATCH_VERSION = "1.0005";
         const transform = "scale(" + crop.zoom.toFixed(2) + ")";
 
         for (const image of [questboardPortraitImage, heroPortraitImage, portraitModalImage]) {
+          if (!image) {
+            continue;
+          }
           image.style.objectPosition = position;
           image.style.transform = transform;
           image.style.transformOrigin = position;
@@ -1526,28 +1529,52 @@ const ERIS_PATCH_VERSION = "1.0005";
 
       function setPortraitImageSource(imageUrl) {
         if (imageUrl) {
-          questboardPortraitImage.src = imageUrl;
-          questboardPortraitImage.style.display = "block";
-          questboardPortraitPlaceholder.style.display = "none";
-          heroPortraitImage.src = imageUrl;
-          heroPortraitImage.style.display = "block";
-          heroPortraitPlaceholder.style.display = "none";
-          portraitModalImage.src = imageUrl;
-          portraitModalImage.style.display = "block";
-          portraitModalPlaceholder.style.display = "none";
+          if (questboardPortraitImage) {
+            questboardPortraitImage.src = imageUrl;
+            questboardPortraitImage.style.display = "block";
+          }
+          if (questboardPortraitPlaceholder) {
+            questboardPortraitPlaceholder.style.display = "none";
+          }
+          if (heroPortraitImage) {
+            heroPortraitImage.src = imageUrl;
+            heroPortraitImage.style.display = "block";
+          }
+          if (heroPortraitPlaceholder) {
+            heroPortraitPlaceholder.style.display = "none";
+          }
+          if (portraitModalImage) {
+            portraitModalImage.src = imageUrl;
+            portraitModalImage.style.display = "block";
+          }
+          if (portraitModalPlaceholder) {
+            portraitModalPlaceholder.style.display = "none";
+          }
           applyPortraitCrop();
           return;
         }
 
-        questboardPortraitImage.removeAttribute("src");
-        questboardPortraitImage.style.display = "none";
-        questboardPortraitPlaceholder.style.display = "grid";
-        heroPortraitImage.removeAttribute("src");
-        heroPortraitImage.style.display = "none";
-        heroPortraitPlaceholder.style.display = "grid";
-        portraitModalImage.removeAttribute("src");
-        portraitModalImage.style.display = "none";
-        portraitModalPlaceholder.style.display = "grid";
+        if (questboardPortraitImage) {
+          questboardPortraitImage.removeAttribute("src");
+          questboardPortraitImage.style.display = "none";
+        }
+        if (questboardPortraitPlaceholder) {
+          questboardPortraitPlaceholder.style.display = "grid";
+        }
+        if (heroPortraitImage) {
+          heroPortraitImage.removeAttribute("src");
+          heroPortraitImage.style.display = "none";
+        }
+        if (heroPortraitPlaceholder) {
+          heroPortraitPlaceholder.style.display = "grid";
+        }
+        if (portraitModalImage) {
+          portraitModalImage.removeAttribute("src");
+          portraitModalImage.style.display = "none";
+        }
+        if (portraitModalPlaceholder) {
+          portraitModalPlaceholder.style.display = "grid";
+        }
         applyPortraitCrop();
       }
       function setPortraitGenerating(isGenerating) {
@@ -1599,7 +1626,9 @@ const ERIS_PATCH_VERSION = "1.0005";
             .map((part) => part[0]?.toUpperCase())
             .slice(0, 2)
             .join("");
-          questboardPortraitInitials.textContent = initials || "ET";
+          if (questboardPortraitInitials) {
+            questboardPortraitInitials.textContent = initials || "ET";
+          }
           heroPortraitInitials.textContent = initials || "ET";
           portraitModalInitials.textContent = initials || "ET";
         }
@@ -1631,6 +1660,8 @@ const ERIS_PATCH_VERSION = "1.0005";
         if (document.activeElement !== outfitNameInput) {
           outfitNameInput.value = character.outfitName ?? "Hero Starter Outfit";
         }
+
+        renderQuestboardHeroStatus();
       }
 
       function renderQuestboardHeroStatus() {
@@ -1690,8 +1721,6 @@ const ERIS_PATCH_VERSION = "1.0005";
           levelLabel.textContent =
             `${player.totalXp} / ${nextLevelXp} XP to Level ${player.level + 1}`;
         }
-
-        renderQuestboardHeroStatus();
       }
 
       function renderInventory() {
@@ -2814,7 +2843,7 @@ const ERIS_PATCH_VERSION = "1.0005";
         closeRequestModal();
       });
 
-      questboardPortraitShell.addEventListener("click", () => {
+      questboardPortraitShell?.addEventListener("click", () => {
         openPortraitModal();
       });
 
@@ -3031,7 +3060,9 @@ const ERIS_PATCH_VERSION = "1.0005";
           .map((part) => part[0]?.toUpperCase())
           .slice(0, 2)
           .join("");
-        questboardPortraitInitials.textContent = initials || "ET";
+        if (questboardPortraitInitials) {
+          questboardPortraitInitials.textContent = initials || "ET";
+        }
         heroPortraitInitials.textContent = initials || "ET";
         portraitModalInitials.textContent = initials || "ET";
         if (portraitUploadStatus) portraitUploadStatus.textContent = "Portrait will be removed when saved.";
