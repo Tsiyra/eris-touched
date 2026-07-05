@@ -1,3 +1,5 @@
+import { getQuestResultPanelState } from "/questboard-result-state.js";
+
 const ERIS_PATCH_VERSION = "1.0005";
       const saveCharacterButton = document.querySelector(
         "#save-character-button"
@@ -157,6 +159,7 @@ const ERIS_PATCH_VERSION = "1.0005";
       showScreen("questboard");
 
       let currentQuest = null;
+      let lastCompletedQuest = null;
       let canceledPinnedRequestKeys = loadCanceledPinnedRequestKeys();
       let pinnedRequests = loadPinnedRequests();
       let log = [];
@@ -1668,18 +1671,12 @@ const ERIS_PATCH_VERSION = "1.0005";
       }
 
       function renderQuest() {
-        if (!currentQuest || currentQuest.status !== "active") {
-          questStatus.textContent = "No request completed yet.";
-          questLoot.textContent = "";
-          return;
-        }
+        const state = getQuestResultPanelState(currentQuest, lastCompletedQuest, {
+          questStarted,
+        });
 
-        questStatus.textContent = questStarted
-          ? "Request in progress."
-          : "Choose a checkmark task to begin.";
-        questLoot.textContent = currentQuest.coins
-          ? `${currentQuest.coins} Gold - ${currentQuest.xp} XP`
-          : `${currentQuest.xp ?? 0} XP`;
+        questStatus.textContent = state.statusText;
+        questLoot.textContent = state.lootText;
       }
 
       function renderNpcChoices() {
@@ -2510,6 +2507,9 @@ const ERIS_PATCH_VERSION = "1.0005";
 
         if (data?.quest !== undefined) {
           currentQuest = data.quest;
+          if (currentQuest?.status === "completed") {
+            lastCompletedQuest = currentQuest;
+          }
         }
 
         if (Array.isArray(data?.log)) {

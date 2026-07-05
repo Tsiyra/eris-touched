@@ -2087,7 +2087,7 @@ function getStaticMimeType(filePath) {
 }
 
 function servePublicFile(pathname, res) {
-  const isKnownPublicFile = pathname === "/styles.css" || pathname === "/app.js";
+  const isKnownPublicFile = pathname === "/styles.css" || pathname === "/app.js" || pathname === "/questboard-result-state.js";
   const isAssetFile = pathname.startsWith("/assets/");
 
   if (!isKnownPublicFile && !isAssetFile) {
