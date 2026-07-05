@@ -2253,11 +2253,14 @@ const ERIS_PATCH_VERSION = "1.0005";
         storyChapterList.className = "";
 
         for (const chapter of storyChapters) {
-          const article = document.createElement("article");
-          article.className = "story-chapter";
+          const details = document.createElement("details");
+          details.className = "story-chapter story-chapter-collapsible";
 
-          const title = document.createElement("h3");
-          title.textContent = chapter.title || "Request Chapter";
+          const summary = document.createElement("summary");
+          summary.textContent = chapter.title || "Request Chapter";
+
+          const content = document.createElement("div");
+          content.className = "story-chapter-content";
 
           const meta = document.createElement("div");
           meta.className = "story-chapter-meta";
@@ -2267,12 +2270,14 @@ const ERIS_PATCH_VERSION = "1.0005";
           meta.textContent = `${minutesText} - ${xpText} - ${rewardText}`;
 
           const body = document.createElement("p");
+          body.className = "story-chapter-body";
           body.textContent = chapter.body || chapter.rewardSummary || "The guild record is quiet for this chapter.";
 
-          article.appendChild(title);
-          article.appendChild(meta);
-          article.appendChild(body);
-          storyChapterList.appendChild(article);
+          content.appendChild(meta);
+          content.appendChild(body);
+          details.appendChild(summary);
+          details.appendChild(content);
+          storyChapterList.appendChild(details);
         }
       }
       function renderStoryLog() {
@@ -3090,4 +3095,3 @@ const ERIS_PATCH_VERSION = "1.0005";
       callTool("get_progress", {}).catch((error) => {
         console.error("Could not load progress:", error);
       });
-

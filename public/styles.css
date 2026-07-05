@@ -737,6 +737,27 @@ body {
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.28);
       }
 
+      .story-chapter-collapsible > summary {
+        list-style: none;
+        cursor: pointer;
+        user-select: none;
+        font-weight: 950;
+        color: #3c210c;
+      }
+
+      .story-chapter-collapsible > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .story-chapter-collapsible[open] > summary {
+        margin-bottom: 8px;
+      }
+
+      .story-chapter-content {
+        display: grid;
+        gap: 4px;
+      }
+
       .story-chapter-title {
         font-weight: 950;
         color: #3c210c;
