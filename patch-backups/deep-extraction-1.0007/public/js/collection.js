@@ -1,3 +1,3 @@
-export function getItemGoldBonus(item) {
+export function getGoldBonus(item) {
   return item?.goldBonus ?? item?.xpBonus ?? 0;
 }

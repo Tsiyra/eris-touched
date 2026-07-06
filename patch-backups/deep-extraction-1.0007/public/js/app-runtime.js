@@ -1,13 +1,6 @@
 import { getQuestResultPanelState } from "/questboard-result-state.js";
-import { APP_VERSION } from "./version.js";
-import { createApiClient } from "./api.js";
-import { formatTime, calculateFocusedSeconds } from "./timer.js";
-import { setupNavigation } from "./navigation.js";
-import { createOverlayController } from "./modals.js";
-import { readFileAsDataUrl, loadImageSource } from "./portrait-files.js";
-import { createPinnedRequestId } from "./questboard.js";
 
-const ERIS_PATCH_VERSION = APP_VERSION;
+const ERIS_PATCH_VERSION = "1.0005";
       const saveCharacterButton = document.querySelector(
         "#save-character-button"
       );
@@ -126,8 +119,48 @@ const ERIS_PATCH_VERSION = APP_VERSION;
       const confirmMinutesPromptButton = document.querySelector("#confirm-minutes-prompt-button");
       const navButtons = document.querySelectorAll(".nav-button");
       const appScreens = document.querySelectorAll(".app-screen");
-      const { showScreen } = setupNavigation({ navButtons, appScreens });
-      const { setOverlayLayerVisible } = createOverlayController({ documentRef: document });
+      const activeOverlayLayers = new Set();
+
+      function syncOverlayChrome() {
+        document.body.classList.toggle("overlay-visible", activeOverlayLayers.size > 0);
+      }
+
+      function setOverlayLayerVisible(layer, isVisible) {
+        if (!layer) return;
+        if (isVisible) {
+          activeOverlayLayers.add(layer);
+        } else {
+          activeOverlayLayers.delete(layer);
+        }
+        syncOverlayChrome();
+      }
+
+      function showScreen(screenName) {
+        appScreens.forEach((screen) => {
+          screen.classList.remove("active-screen");
+        });
+
+        navButtons.forEach((button) => {
+          button.classList.remove("active");
+        });
+
+        const screen = document.querySelector(`#screen-${screenName}`);
+        const button = document.querySelector(`[data-screen="${screenName}"]`);
+
+        if (screen) screen.classList.add("active-screen");
+        if (button) button.classList.add("active");
+      }
+
+      navButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const targetScreen = button.dataset.screen;
+          if (targetScreen) {
+            showScreen(targetScreen);
+          }
+        });
+      });
+
+
       requestSizeButtons.forEach((button) => {
         button.addEventListener("click", () => {
           const nextSize = button.dataset.requestSize;
@@ -192,6 +225,10 @@ const ERIS_PATCH_VERSION = APP_VERSION;
         ACTIVE_PINNED_REQUEST_ID_STORAGE_KEY
       ) || "";
       let activeQuestProgress = loadActiveQuestProgress();
+
+      function createPinnedRequestId() {
+        return `pinned-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      }
 
       function normalizePinnedRequest(request) {
         const task = String(request?.task || '').trim();
@@ -1162,12 +1199,23 @@ const ERIS_PATCH_VERSION = APP_VERSION;
         10: 3000,
       };
 
+      function formatTime(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        return [hours, minutes, seconds]
+          .map((number) => String(number).padStart(2, "0"))
+          .join(":");
+      }
+
       function getFocusedSeconds() {
-        return calculateFocusedSeconds({
-          timerRunning,
-          startTime,
-          accumulatedSeconds,
-        });
+        if (!timerRunning || !startTime) {
+          return accumulatedSeconds;
+        }
+
+        const currentRunSeconds = Math.floor((Date.now() - startTime) / 1000);
+        return accumulatedSeconds + currentRunSeconds;
       }
 
       function getStoryToneLabel(storyTone) {
@@ -1380,6 +1428,24 @@ const ERIS_PATCH_VERSION = APP_VERSION;
         updateTimerDisplay();
         renderQuestSteps();
         renderActiveQuest();
+      }
+
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener("load", () => resolve(reader.result));
+          reader.addEventListener("error", () => reject(reader.error));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function loadImageSource(source) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.addEventListener("load", () => resolve(image));
+          image.addEventListener("error", () => reject(new Error("Image failed to load.")));
+          image.src = source;
+        });
       }
 
       async function createPortraitDataUrl(file) {
@@ -2581,13 +2647,71 @@ const ERIS_PATCH_VERSION = APP_VERSION;
       // Web API integration
       const API_BASE = window.location.origin;
 
-      const { callTool, reportToolError, getToolText } = createApiClient({
-        apiBase: API_BASE,
-        updateFromResponse,
-        onError: () => {
-          alert("That action could not be completed. Please try again.");
-        },
-      });
+      async function callTool(name, payload) {
+        const endpointMap = {
+          get_progress: { method: "GET", path: "/api/progress" },
+          pin_focus_quest: { method: "POST", path: "/api/pin-quest" },
+          plan_focus_request: { method: "POST", path: "/api/plan-request" },
+          embark_focus_quest: { method: "POST", path: "/api/embark-quest" },
+          start_focus_quest: { method: "POST", path: "/api/start-quest" },
+          complete_focus_quest: { method: "POST", path: "/api/complete-quest" },
+          cancel_focus_quest: { method: "POST", path: "/api/cancel-quest" },
+          update_character: { method: "POST", path: "/api/update-character" },
+          generate_portrait: { method: "POST", path: "/api/generate-portrait" },
+          update_settings: { method: "POST", path: "/api/update-settings" },
+          choose_npc: { method: "POST", path: "/api/choose-npc" },
+        };
+
+        const config = endpointMap[name];
+        if (!config) {
+          throw new Error(`Unknown tool: ${name}`);
+        }
+
+        const url = `${API_BASE}${config.path}`;
+        const options = {
+          method: config.method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        };
+
+        if (config.method === "POST" && payload) {
+          options.body = JSON.stringify(payload);
+        }
+
+        const response = await fetch(url, options);
+        const responseText = await response.text();
+        let data = {};
+
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch {
+          data = {
+            error: responseText || "API request failed",
+          };
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || data.message || "API request failed");
+        }
+
+        updateFromResponse(data);
+        return data;
+      }
+
+      function reportToolError(error) {
+        const message = error?.message || "Unknown error.";
+        console.error("Tool call failed:", message, error);
+        alert(`That action could not be completed. Please try again.\n${message}`);
+      }
+
+      function getToolText(response) {
+        return response?.content
+          ?.filter((item) => item.type === "text")
+          .map((item) => item.text)
+          .join("\n")
+          .trim();
+      }
 
       function buildCharacterPayload(name, description) {
         const payload = {
