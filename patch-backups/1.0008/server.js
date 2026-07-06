@@ -21,7 +21,7 @@ import { z } from "zod";
 const PUBLIC_DIR = "public";
 const appHtml = readFileSync(join(PUBLIC_DIR, "app-web.html"), "utf8");
 const APP_URI = "ui://widget/eris-focus.html";
-const ERIS_PATCH_VERSION = "1.0008";
+const ERIS_PATCH_VERSION = "1.0005";
 
 const DATA_DIR = process.env.ERIS_DATA_DIR ?? "data";
 const SAVE_FILE = join(DATA_DIR, "save.json");
@@ -2089,9 +2089,8 @@ function getStaticMimeType(filePath) {
 function servePublicFile(pathname, res) {
   const isKnownPublicFile = pathname === "/styles.css" || pathname === "/app.js" || pathname === "/questboard-result-state.js";
   const isAssetFile = pathname.startsWith("/assets/");
-  const isJsModuleFile = pathname.startsWith("/js/");
 
-  if (!isKnownPublicFile && !isAssetFile && !isJsModuleFile) {
+  if (!isKnownPublicFile && !isAssetFile) {
     return false;
   }
 
